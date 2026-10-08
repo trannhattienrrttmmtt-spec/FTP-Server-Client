@@ -1,0 +1,7 @@
+HUONG DAN SU DUNG GIAO THUC FTP HAI KENH:
+1. Ket noi den Control Port: 2121
+2. Dang nhap bang USER va PASS (vi du: tien / 123456)
+3. Gui lenh PASV de mo kenh du lieu Passive Mode
+4. Client ket noi den IP va Port duoc tra ve trong phan hoi 227
+5. Gui lenh LIST / RETR / STOR qua Control Channel de truyen du lieu qua Data Channel
+6. Gui QUIT khi muon ket thuc phien lam viec.

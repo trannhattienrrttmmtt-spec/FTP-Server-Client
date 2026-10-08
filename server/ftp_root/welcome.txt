@@ -1,0 +1,11 @@
+=============================================================
+CHAO MUNG DEN VOI HE THONG FTP SERVER HAI KENH (NHOM 11)
+Mon hoc: Lap trinh mang may tinh - Lop: 23DTHB4
+De tai: He thong FTP Server/Client co ban voi Hai kenh (Dieu khien va Du lieu)
+Thanh vien nhom:
+1. Tran Nhat Tien  - MSSV: 2380602243 (Server)
+2. Nguyen Anh Vu   - MSSV: 2380602582 (Client)
+3. Phan Thanh Trong - MSSV: 2380602351 (Data Channel)
+=============================================================
+Day la tep tin mau tren FTP Server cua nhom.
+Cac lenh ho tro: USER, PASS, PWD, CWD, PASV, LIST, RETR, STOR, QUIT, NOOP, HELP.
