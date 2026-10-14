@@ -13,7 +13,7 @@
 | STT | Họ và tên | MSSV | Vai trò | Nhiệm vụ chính phụ trách | Trạng thái |
 | :---: | :--- | :---: | :---: | :--- | :---: |
 | 1 | **Trần Nhật Tiến** | **2380602243** | Nhóm trưởng | **Xây dựng FTP Server** (Đa luồng, xử lý lệnh, Passive Mode, Logging, Quản lý Sandbox root, Bảo mật) & Thiết kế giao thức `PROTOCOL.md` | **Đã hoàn thành 100%** |
-| 2 | **Nguyễn Anh Vũ** | **2380602582** | Thành viên | **Xây dựng FTP Client** (Giao diện đồ họa Java Swing, quản lý kết nối, hiển thị tệp tin, cập nhật thanh tiến trình JProgressBar) | *Đang phát triển* |
+| 2 | **Nguyễn Anh Vũ** | **2380602582** | Thành viên | **Xây dựng FTP Client** (Giao diện đồ họa Java Swing, quản lý kết nối, hiển thị tệp tin, cập nhật thanh tiến trình JProgressBar, FtpConsoleClient) | **Đã hoàn thành 100%** |
 | 3 | **Phan Thanh Trọng** | **2380602351** | Thành viên | **Xây dựng Data Channel** (Passive Mode, Stream Binary Buffer STOR/RETR, Listener tiến độ & tốc độ, Xử lý lỗi toàn diện, Test hiệu năng & Checksum SHA-256) | **Đã hoàn thành 100%** |
 
 ---
@@ -37,9 +37,17 @@ project/
 │       └── tailieu/
 │           └── huong_dan_ftp.txt
 ├── client/                     # [Nguyễn Anh Vũ] Module giao diện và ứng dụng Client
-│   ├── .gitkeep
-│   ├── README.md               # Hướng dẫn chi tiết nhiệm vụ của Vũ
-│   └── FtpClientStub.java      # Khung sườn code mẫu cho giao diện Swing
+│   ├── ClientApp.java          # Ứng dụng GUI đồ họa Java Swing đầy đủ tính năng
+│   ├── FtpClientController.java # Quản lý kết nối mạng Socket phía Client, lệnh FTP
+│   ├── FileTransferTask.java   # Luồng SwingWorker truyền file nền & cập nhật progress bar
+│   ├── FtpFileEntry.java       # Model phân tích định dạng tệp tin từ lệnh LIST
+│   ├── FtpResponse.java        # Model phản hồi từ FTP Server
+│   ├── FtpConsoleClient.java   # Phiên bản Client chạy trên dòng lệnh Console
+│   ├── FtpClientStub.java      # Lớp chuyển tiếp tương thích ngược
+│   ├── BienDichClient.bat      # Script biên dịch riêng module Client
+│   ├── ChayClient.bat          # Script khởi chạy nhanh Client Swing
+│   ├── ChayClientConsole.bat   # Script khởi chạy nhanh Client Console
+│   └── README.md               # Hướng dẫn chi tiết sử dụng Client
 ├── datachannel/                # [Phan Thanh Trọng] Module kênh dữ liệu dùng chung
 │   ├── .gitkeep
 │   ├── README.md               # Hướng dẫn chi tiết nhiệm vụ của Trọng
@@ -76,6 +84,30 @@ java -Dfile.encoding=UTF-8 -cp bin server.FtpServer 2121 "server\ftp_root"
 Hoặc nhấp đúp chuột vào tệp:
 ```text
 server\ChayServer.bat
+```
+
+---
+
+## 💻 HƯỚNG DẪN KHỞI CHẠY FTP CLIENT
+
+### 1. Khởi chạy Giao diện đồ họa (Swing GUI)
+Nhấp đúp chuột vào file:
+```text
+client\ChayClient.bat
+```
+Hoặc chạy lệnh:
+```powershell
+java -Dfile.encoding=UTF-8 -cp bin client.ClientApp
+```
+
+### 2. Khởi chạy Giao diện Dòng lệnh (Console Client)
+Nhấp đúp chuột vào file:
+```text
+client\ChayClientConsole.bat
+```
+Hoặc chạy lệnh:
+```powershell
+java -Dfile.encoding=UTF-8 -cp bin client.FtpConsoleClient
 ```
 
 ---

@@ -9,18 +9,10 @@ package client;
  * JTable, JProgressBar...) và tích hợp gọi socket điều khiển tới Server theo PROTOCOL.md.
  */
 public class FtpClientStub {
-    // TODO (Vũ): Xây dựng giao diện Swing:
-    // - Khung đăng nhập (Host, Port, User, Pass)
-    // - JTable hiển thị danh sách tệp tin
-    // - JProgressBar hiển thị % tiến độ upload/download
-    // - JTextArea hiển thị log lệnh và phản hồi
-    // - Các nút chức năng: Upload, Download, Delete, Refresh, Make Dir, Disconnect
+    // Đã hoàn thiện: xem ClientApp (GUI Swing), FtpConsoleClient (console),
+    // FtpClientController (Control Channel + PASV) và FileTransferTask (SwingWorker + JProgressBar).
 
     public static void main(String[] args) {
-        System.out.println("=================================================");
-        System.out.println(" FTP CLIENT - HE THONG HAI KENH (NHOM 11)        ");
-        System.out.println(" Phu trach phat trien: Nguyen Anh Vu (2380602582)");
-        System.out.println("=================================================");
-        System.out.println("Dang cho Nguyen Anh Vu hoan thien giao dien Swing.");
+        ClientApp.main(args);
     }
 }
