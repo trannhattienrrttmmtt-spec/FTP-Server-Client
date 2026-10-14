@@ -330,6 +330,11 @@ public class ClientHandler implements Runnable {
             closePassiveConnection();
             return;
         }
+        if (!file.canRead()) {
+            sendResponse(FtpResponseCode.FILE_UNAVAILABLE, "Khong co quyen doc tep tin (Permission Denied): " + fileName);
+            closePassiveConnection();
+            return;
+        }
 
         sendResponse(FtpResponseCode.FILE_STATUS_OK_OPENING_DATA_CONNECTION, 
                 String.format("Mo Data Channel che do BINARY cho tep '%s' (%d bytes).", file.getName(), file.length()));
@@ -363,6 +368,19 @@ public class ClientHandler implements Runnable {
         File file = resolvePath(fileName);
         if (file == null || !isSafePath(file)) {
             sendResponse(FtpResponseCode.FILE_UNAVAILABLE, "Duong dan khong hop le hoac bi tu choi quyen ghi: " + fileName);
+            closePassiveConnection();
+            return;
+        }
+
+        File parent = file.getParentFile();
+        if (parent != null && (!parent.exists() || !parent.canWrite())) {
+            sendResponse(FtpResponseCode.FILE_UNAVAILABLE, "Khong co quyen ghi vao thu muc dich (Permission Denied).");
+            closePassiveConnection();
+            return;
+        }
+
+        if (file.exists() && !file.canWrite()) {
+            sendResponse(FtpResponseCode.FILE_UNAVAILABLE, "Tep tin da ton tai va chi co quyen doc (Read-only): " + fileName);
             closePassiveConnection();
             return;
         }

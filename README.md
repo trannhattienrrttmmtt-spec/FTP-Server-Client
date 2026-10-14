@@ -14,7 +14,7 @@
 | :---: | :--- | :---: | :---: | :--- | :---: |
 | 1 | **Trần Nhật Tiến** | **2380602243** | Nhóm trưởng | **Xây dựng FTP Server** (Đa luồng, xử lý lệnh, Passive Mode, Logging, Quản lý Sandbox root, Bảo mật) & Thiết kế giao thức `PROTOCOL.md` | **Đã hoàn thành 100%** |
 | 2 | **Nguyễn Anh Vũ** | **2380602582** | Thành viên | **Xây dựng FTP Client** (Giao diện đồ họa Java Swing, quản lý kết nối, hiển thị tệp tin, cập nhật thanh tiến trình JProgressBar) | *Đang phát triển* |
-| 3 | **Phan Thanh Trọng** | **2380602351** | Thành viên | **Xây dựng Data Channel** (Module kênh truyền dữ liệu dùng chung, quản lý binary stream buffer, Listener báo tiến độ truyền tải) | *Đang phát triển* |
+| 3 | **Phan Thanh Trọng** | **2380602351** | Thành viên | **Xây dựng Data Channel** (Passive Mode, Stream Binary Buffer STOR/RETR, Listener tiến độ & tốc độ, Xử lý lỗi toàn diện, Test hiệu năng & Checksum SHA-256) | **Đã hoàn thành 100%** |
 
 ---
 

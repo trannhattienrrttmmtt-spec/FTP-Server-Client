@@ -118,6 +118,9 @@ public class PassiveDataConnection implements Closeable {
      * Gửi nội dung tệp tin đến Client qua Data Socket (phục vụ lệnh RETR / Download)
      */
     public long sendFile(File file) throws IOException {
+        if (!file.canRead()) {
+            throw new IOException("Khong co quyen doc tep tin: " + file.getName());
+        }
         long totalBytes = 0;
         try (Socket socket = acceptConnection();
              BufferedInputStream fileIn = new BufferedInputStream(new FileInputStream(file));
@@ -140,12 +143,14 @@ public class PassiveDataConnection implements Closeable {
 
     /**
      * Nhận nội dung tệp tin từ Client qua Data Socket và ghi vào ổ đĩa (phục vụ lệnh STOR / Upload)
+     * Sử dụng file tạm .part để chống hỏng dữ liệu nếu mất kết nối giữa chừng
      */
     public long receiveFile(File targetFile) throws IOException {
         long totalBytes = 0;
+        File tempFile = new File(targetFile.getParentFile(), targetFile.getName() + ".part");
         try (Socket socket = acceptConnection();
              BufferedInputStream socketIn = new BufferedInputStream(socket.getInputStream());
-             BufferedOutputStream fileOut = new BufferedOutputStream(new FileOutputStream(targetFile))) {
+             BufferedOutputStream fileOut = new BufferedOutputStream(new FileOutputStream(tempFile))) {
 
             byte[] buffer = new byte[ServerConfig.BUFFER_SIZE];
             int bytesRead;
@@ -154,9 +159,25 @@ public class PassiveDataConnection implements Closeable {
                 totalBytes += bytesRead;
             }
             fileOut.flush();
+            fileOut.close();
+
+            // Đổi tên file tạm thành file đích sau khi truyền trọn vẹn thành công
+            if (targetFile.exists()) {
+                targetFile.delete();
+            }
+            if (!tempFile.renameTo(targetFile)) {
+                throw new IOException("Khong the doi ten file tam sang file dich: " + targetFile.getName());
+            }
+
             ServerLogger.info(clientTag, String.format("Da nhan thanh cong tep '%s' (%d bytes) tu Client.", 
                     targetFile.getName(), totalBytes));
             return totalBytes;
+        } catch (IOException e) {
+            // Dọn dẹp file tạm khi gặp lỗi gián đoạn hoặc mất kết nối
+            if (tempFile.exists()) {
+                tempFile.delete();
+            }
+            throw e;
         } finally {
             close();
         }
