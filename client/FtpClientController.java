@@ -275,7 +275,10 @@ public class FtpClientController {
         }
         String ip = m.group(1) + "." + m.group(2) + "." + m.group(3) + "." + m.group(4);
         int port = Integer.parseInt(m.group(5)) * 256 + Integer.parseInt(m.group(6));
-        if ("0.0.0.0".equals(ip)) ip = host; // Server không biết IP của mình -> dùng IP Control Channel
+        // Nếu Server không biết IP (0.0.0.0) hoặc trả về loopback trong khi Client kết nối từ máy khác -> dùng IP host đã kết nối
+        if ("0.0.0.0".equals(ip) || ("127.0.0.1".equals(ip) && !"127.0.0.1".equals(host) && !"localhost".equalsIgnoreCase(host))) {
+            ip = host;
+        }
 
         log("*** Mở Data Channel tới " + ip + ":" + port + " (port = "
                 + m.group(5) + " * 256 + " + m.group(6) + ")");
