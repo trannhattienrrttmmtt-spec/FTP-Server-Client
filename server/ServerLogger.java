@@ -6,9 +6,10 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.function.Consumer;
 
 /**
- * Lớp ghi log hoạt động của Server ra Console và tệp server.log
+ * Lớp ghi log hoạt động của Server ra Console, tệp server.log và Giao diện UI
  * Đề tài: Hệ thống FTP Server/Client cơ bản với Hai kênh
  * Thực hiện: Trần Nhật Tiến (MSSV: 2380602243)
  */
@@ -16,6 +17,11 @@ public class ServerLogger {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final Object LOCK = new Object();
     private static PrintWriter fileWriter = null;
+    private static volatile Consumer<String> uiLogListener = null;
+
+    public static void setUiLogListener(Consumer<String> listener) {
+        uiLogListener = listener;
+    }
 
     static {
         try {
@@ -63,6 +69,12 @@ public class ServerLogger {
             if (fileWriter != null) {
                 fileWriter.println(fullMessage);
             }
+        }
+        Consumer<String> listener = uiLogListener;
+        if (listener != null) {
+            try {
+                listener.accept(fullMessage);
+            } catch (Exception ignored) {}
         }
     }
 

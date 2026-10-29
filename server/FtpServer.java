@@ -28,12 +28,42 @@ public class FtpServer {
     private ServerSocket serverSocket;
     private volatile boolean isRunning = false;
     private final LocalDateTime startTime = LocalDateTime.now();
+    private final boolean enableConsoleInput;
 
     public FtpServer(int port, String rootDirPath) {
+        this(port, rootDirPath, new UserManager(), true);
+    }
+
+    public FtpServer(int port, String rootDirPath, UserManager userManager, boolean enableConsoleInput) {
         this.port = port;
         this.rootDir = ServerConfig.getResolvedRootDir(rootDirPath);
-        this.userManager = new UserManager();
+        this.userManager = (userManager != null) ? userManager : new UserManager();
         this.threadPool = Executors.newCachedThreadPool();
+        this.enableConsoleInput = enableConsoleInput;
+    }
+
+    public boolean isRunning() {
+        return isRunning;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public File getRootDir() {
+        return rootDir;
+    }
+
+    public UserManager getUserManager() {
+        return userManager;
+    }
+
+    public int getClientCount() {
+        return clientCounter.get();
+    }
+
+    public LocalDateTime getStartTime() {
+        return startTime;
     }
 
     /**
@@ -52,10 +82,12 @@ public class FtpServer {
             // Đăng ký Shutdown Hook giải phóng tài nguyên khi tắt ứng dụng
             Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
 
-            // Khởi chạy luồng đọc lệnh console của quản trị viên
-            Thread consoleThread = new Thread(this::runAdminConsole, "Admin-Console-Thread");
-            consoleThread.setDaemon(true);
-            consoleThread.start();
+            // Khởi chạy luồng đọc lệnh console của quản trị viên (nếu chạy ở chế độ CLI)
+            if (enableConsoleInput) {
+                Thread consoleThread = new Thread(this::runAdminConsole, "Admin-Console-Thread");
+                consoleThread.setDaemon(true);
+                consoleThread.start();
+            }
 
             // Vòng lặp chính tiếp nhận kết nối đa luồng
             while (isRunning) {

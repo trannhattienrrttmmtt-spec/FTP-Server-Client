@@ -66,6 +66,14 @@ public class UserManager {
     }
 
     /**
+     * Xóa tài khoản khỏi hệ thống
+     */
+    public boolean removeUser(String username) {
+        if (username == null) return false;
+        return userDatabase.remove(username.trim().toLowerCase()) != null;
+    }
+
+    /**
      * Lấy danh sách tất cả các username hiện có
      */
     public Map<String, String> getAllUsers() {
