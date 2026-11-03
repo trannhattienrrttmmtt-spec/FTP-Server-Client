@@ -8,13 +8,20 @@
 
 ## 1. Chức năng đã hoàn thành
 
-- [x] **Giao diện người dùng (Swing UI)** – `ClientApp.java`
-  - Khung đăng nhập: IP Server, Port (mặc định `2121`), Username, Password.
-  - Bảng danh sách tệp/thư mục (`JTable`): Tên (có icon), Loại, Kích thước, Ngày sửa đổi, Quyền. Bấm tiêu đề cột để sắp xếp.
-  - Thanh đường dẫn thư mục hiện tại (gõ đường dẫn rồi Enter để `CWD`) và nút **↑ Lên** (`CDUP`).
-  - Các nút: **Làm mới**, **Tải lên**, **Tải xuống**, **Tạo thư mục**, **Xóa**; menu chuột phải; kéo thả tệp từ Explorer để tải lên.
-  - Thanh tiến trình `JProgressBar`: %, số byte đã truyền / tổng, tốc độ (KB/s, MB/s), thứ tự tệp (vd. `[2/5]`), nút **Hủy**.
-  - Khung Log `JTextArea`: hiển thị mọi lệnh gửi đi (`>>`) và phản hồi Server (`<<`) kèm giờ; ô **Lệnh FTP** để gõ lệnh thủ công.
+- [x] **Giao diện người dùng Hiện Đại (Modern Dual-Pane Swing UI)** – `ClientApp.java`
+  - **Bố cục 2 Bảng (Dual Explorer: Máy Cục Bộ <--> Máy Chủ FTP)** chuẩn như FileZilla/WinSCP:
+    - Bảng Trái (Local Explorer): Xem tệp cục bộ, icon loại tệp, kích thước, ngày sửa đổi, ô lọc nhanh, nhấp đúp tải lên ngay.
+    - Bảng Phải (Remote Explorer): Xem tệp trên Server, ô lọc nhanh, nhấp đúp tải xuống ngay.
+    - Cặp nút trung tâm trực quan: `[ Tải lên ➔ ]` và `[ ⬅ Tải xuống ]`.
+  - **Thanh Đăng nhập Nhanh (Quick Connect Bar)**:
+    - Đèn LED tín hiệu trạng thái kết nối thông minh (Xanh lá: Đã kết nối, Đỏ: Chưa kết nối, Vàng: Đang kết nối).
+    - Danh sách chọn nhanh tài khoản mẫu: `vu`, `tien`, `trong`, `admin`, `anonymous` (tự động điền thông tin).
+  - **Thanh Công Cụ Chính (Main Toolbar)**: Các nút chức năng có icon rõ ràng (Làm mới, Tải lên, Tải xuống, Tạo thư mục, Xóa, Ẩn/Hiện nhật ký).
+  - **Thanh tiến trình & Tốc độ thời gian thực**: Thanh `JProgressBar` mượt mà kèm % hoàn thành, dung lượng `X MB / Y MB`, tốc độ KB/s hoặc MB/s, tên file và nút Hủy.
+  - **Khung Nhật ký Terminal Phong Cách Dark Theme**:
+    - Nền tối chuyên nghiệp phong cách VS Code Console.
+    - Tô màu cú pháp thông minh: Xanh Cyan (lệnh `>>`), Xanh lục (phản hồi `<< 2xx`), Đỏ (lỗi `4xx`/`5xx`/`!!!`), Vàng (thông tin `***`).
+    - Lịch sử lệnh gõ bằng phím Mũi tên Lên/Xuống; nút Ẩn/Hiện để tối ưu không gian.
 - [x] **Xử lý mạng phía Client** – `FtpClientController.java`
   - Kết nối Control Socket (cổng `2121`), đọc banner `220`, đăng nhập `USER`/`PASS`, chuyển `TYPE I`.
   - Đọc phản hồi một dòng và **nhiều dòng** (`211-...`, `214-...`) theo RFC 959.
