@@ -2,6 +2,7 @@ package server;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -28,6 +29,8 @@ import java.util.TreeMap;
  * Đề tài: Hệ thống FTP Server/Client cơ bản với Hai kênh (Điều khiển và Dữ liệu)
  * Môn học: Lập trình mạng máy tính - Lớp: 23DTHB4 - Nhóm 11
  * Sinh viên thực hiện phần Server: Trần Nhật Tiến (MSSV: 2380602243)
+ *
+ * Đã khắc phục triệt để lỗi màu mất chữ, lỗi ô vuông [] trên Windows Look and Feel.
  */
 public class ServerApp extends JFrame {
 
@@ -36,16 +39,25 @@ public class ServerApp extends JFrame {
     private Thread serverThread;
     private LocalDateTime serverStartTime;
 
+    // Màu sắc giao diện phẳng
+    private static final Color CLR_START = new Color(22, 163, 74);      // Green 600
+    private static final Color CLR_STOP = new Color(220, 38, 38);       // Red 600
+    private static final Color CLR_PRIMARY = new Color(37, 99, 235);     // Blue 600
+    private static final Color CLR_BORDER = new Color(226, 232, 240);    // Slate 200
+
+    private static final Icon FOLDER_ICON = new FolderVectorIcon(16, 16);
+    private static final Icon FILE_ICON = new FileVectorIcon(16, 16);
+
     // --- Điều khiển cấu hình ---
     private final JTextField portField = new JTextField(String.valueOf(ServerConfig.DEFAULT_CONTROL_PORT), 6);
     private final JTextField rootField = new JTextField("server/ftp_root", 22);
     private final JButton browseBtn = new JButton("Chọn...");
     private final JButton openFolderBtn = new JButton("Mở thư mục");
-    private final JButton startBtn = new JButton("▶ Khởi động Server");
-    private final JButton stopBtn = new JButton("■ Dừng Server");
+    private final ServerCustomButton startBtn = new ServerCustomButton("Khởi động Server", CLR_START, Color.WHITE);
+    private final ServerCustomButton stopBtn = new ServerCustomButton("Dừng Server", CLR_STOP, Color.WHITE);
 
     // --- Thanh trạng thái Dashboard ---
-    private final JLabel statusBadge = new JLabel("● ĐÃ DỪNG");
+    private final StatusBadgeLabel statusBadge = new StatusBadgeLabel();
     private final JLabel lanIpLabel = new JLabel("IP LAN: 127.0.0.1");
     private final JLabel pasvRangeLabel = new JLabel(
             "PASV Ports: " + ServerConfig.PASSIVE_PORT_MIN + " – " + ServerConfig.PASSIVE_PORT_MAX);
@@ -63,7 +75,7 @@ public class ServerApp extends JFrame {
     // --- Bảng giám sát tệp tin trong Sandbox Root ---
     private final RootFileTableModel rootFileTableModel = new RootFileTableModel();
     private final JTable rootFileTable = new JTable(rootFileTableModel);
-    private final JButton refreshFilesBtn = new JButton("↻ Làm mới kho tệp");
+    private final JButton refreshFilesBtn = new JButton("Làm mới kho tệp");
     private final JLabel rootSummaryLabel = new JLabel("0 mục");
 
     // --- Khung Nhật ký (Server Console Log) ---
@@ -83,7 +95,7 @@ public class ServerApp extends JFrame {
         }
 
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-        setSize(1120, 740);
+        setSize(1140, 750);
         setLocationRelativeTo(null);
 
         buildUi();
@@ -141,15 +153,8 @@ public class ServerApp extends JFrame {
         c.gridx = col++;
         configBar.add(openFolderBtn, c);
 
-        startBtn.setBackground(new Color(22, 163, 74));
-        startBtn.setForeground(Color.WHITE);
-        startBtn.setFocusPainted(false);
-        startBtn.setFont(startBtn.getFont().deriveFont(Font.BOLD));
-
-        stopBtn.setBackground(new Color(220, 38, 38));
-        stopBtn.setForeground(Color.WHITE);
-        stopBtn.setFocusPainted(false);
-        stopBtn.setFont(stopBtn.getFont().deriveFont(Font.BOLD));
+        startBtn.setPreferredSize(new Dimension(145, 28));
+        stopBtn.setPreferredSize(new Dimension(115, 28));
         stopBtn.setEnabled(false);
 
         c.gridx = col++;
@@ -161,8 +166,7 @@ public class ServerApp extends JFrame {
         JPanel statsBar = new JPanel(new GridLayout(1, 5, 10, 0));
         statsBar.setBorder(new EmptyBorder(2, 2, 2, 2));
 
-        statusBadge.setFont(statusBadge.getFont().deriveFont(Font.BOLD, 13f));
-        statusBadge.setForeground(new Color(185, 28, 28));
+        statusBadge.setStatus(false, "ĐÃ DỪNG");
         statsBar.add(createMetricCard("Trạng thái Máy chủ", statusBadge));
         statsBar.add(createMetricCard("Địa chỉ Mạng (Client nhập)", lanIpLabel));
         statsBar.add(createMetricCard("Kênh Dữ liệu (Passive Mode)", pasvRangeLabel));
@@ -174,14 +178,13 @@ public class ServerApp extends JFrame {
         root.add(topContainer, BorderLayout.NORTH);
 
         // ==================== CENTER: SPLIT PANE ====================
-        // Bên trái: Quản lý User + Giám sát Kho tệp Sandbox
         JPanel leftPanel = new JPanel(new GridLayout(2, 1, 0, 8));
 
         // 1. Panel Quản lý Tài khoản
         JPanel userPanel = new JPanel(new BorderLayout(4, 6));
         userPanel.setBorder(new TitledBorder("Quản lý Tài khoản Xác thực (UserManager)"));
 
-        userTable.setRowHeight(23);
+        userTable.setRowHeight(24);
         userTable.setFillsViewportHeight(true);
         userTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         userPanel.add(new JScrollPane(userTable), BorderLayout.CENTER);
@@ -199,8 +202,9 @@ public class ServerApp extends JFrame {
         JPanel filePanel = new JPanel(new BorderLayout(4, 6));
         filePanel.setBorder(new TitledBorder("Giám sát Kho Lưu trữ Gốc (Sandbox Root Directory)"));
 
-        rootFileTable.setRowHeight(23);
+        rootFileTable.setRowHeight(24);
         rootFileTable.setFillsViewportHeight(true);
+        rootFileTable.getColumnModel().getColumn(0).setCellRenderer(new RootFileNameRenderer());
         DefaultTableCellRenderer rightRenderer = new DefaultTableCellRenderer();
         rightRenderer.setHorizontalAlignment(SwingConstants.RIGHT);
         rootFileTable.getColumnModel().getColumn(2).setCellRenderer(rightRenderer);
@@ -228,7 +232,8 @@ public class ServerApp extends JFrame {
 
         JPanel logBottom = new JPanel(new BorderLayout(6, 0));
         JPanel cmdInputPanel = new JPanel(new BorderLayout(4, 0));
-        cmdInputPanel.add(new JLabel("Lệnh Admin (status / users / adduser u p / help): "), BorderLayout.WEST);
+        cmdInputPanel.add(new JLabel("Lệnh Admin: "), BorderLayout.WEST);
+        adminCmdField.setToolTipText("Lệnh quản trị: status, users, adduser <user> <pass>, start, stop, clear");
         cmdInputPanel.add(adminCmdField, BorderLayout.CENTER);
         cmdInputPanel.add(sendAdminCmdBtn, BorderLayout.EAST);
 
@@ -242,11 +247,11 @@ public class ServerApp extends JFrame {
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, logPanel);
         splitPane.setResizeWeight(0.42);
-        splitPane.setDividerLocation(440);
+        splitPane.setDividerLocation(450);
         root.add(splitPane, BorderLayout.CENTER);
     }
 
-    private JPanel createMetricCard(String title, JLabel valueLabel) {
+    private JPanel createMetricCard(String title, JComponent valueComp) {
         JPanel card = new JPanel(new BorderLayout(2, 2));
         card.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(203, 213, 225), 1, true),
@@ -256,9 +261,9 @@ public class ServerApp extends JFrame {
         JLabel titleLbl = new JLabel(title);
         titleLbl.setFont(titleLbl.getFont().deriveFont(Font.PLAIN, 11f));
         titleLbl.setForeground(new Color(100, 116, 139));
-        valueLabel.setFont(valueLabel.getFont().deriveFont(Font.BOLD, 12.5f));
+        valueComp.setFont(valueComp.getFont().deriveFont(Font.BOLD, 12.5f));
         card.add(titleLbl, BorderLayout.NORTH);
-        card.add(valueLabel, BorderLayout.CENTER);
+        card.add(valueComp, BorderLayout.CENTER);
         return card;
     }
 
@@ -334,9 +339,7 @@ public class ServerApp extends JFrame {
         });
 
         refreshFilesBtn.addActionListener(e -> refreshRootFiles());
-
         clearLogBtn.addActionListener(e -> logArea.setText(""));
-
         sendAdminCmdBtn.addActionListener(e -> executeAdminCommand());
         adminCmdField.addActionListener(e -> executeAdminCommand());
 
@@ -372,9 +375,7 @@ public class ServerApp extends JFrame {
         startBtn.setEnabled(false);
         stopBtn.setEnabled(true);
 
-        statusBadge.setText("● ĐANG CHẠY (Port " + port + ")");
-        statusBadge.setForeground(new Color(21, 128, 61));
-
+        statusBadge.setStatus(true, "ĐANG CHẠY (Port " + port + ")");
         refreshRootFiles();
 
         serverThread = new Thread(() -> {
@@ -400,8 +401,7 @@ public class ServerApp extends JFrame {
         browseBtn.setEnabled(true);
         startBtn.setEnabled(true);
         stopBtn.setEnabled(false);
-        statusBadge.setText("● ĐÃ DỪNG");
-        statusBadge.setForeground(new Color(185, 28, 28));
+        statusBadge.setStatus(false, "ĐÃ DỪNG");
     }
 
     private void updateDashboardMetrics() {
@@ -471,7 +471,6 @@ public class ServerApp extends JFrame {
             if (autoScrollCheck.isSelected()) {
                 logArea.setCaretPosition(logArea.getDocument().getLength());
             }
-            // Tự động làm mới bảng tệp nếu có thao tác tải lên / xóa / tạo thư mục hoàn tất
             if (msg.contains("226 ") || msg.contains("250 ")) {
                 refreshRootFiles();
             }
@@ -530,6 +529,160 @@ public class ServerApp extends JFrame {
         return String.format("%.2f MB", mb);
     }
 
+    // =====================================================================
+    // CUSTOM BUTTON TỰ VẼ - ĐẢM BẢO CHỮ LUÔN NỔI BẬT KHÔNG BỊ TRẮNG MẤT CHỮ
+    // =====================================================================
+
+    private static class ServerCustomButton extends JButton {
+        private final Color bg;
+        private final Color fg;
+
+        public ServerCustomButton(String text, Color bg, Color fg) {
+            super(text);
+            this.bg = bg;
+            this.fg = fg;
+            setContentAreaFilled(false);
+            setFocusPainted(false);
+            setBorderPainted(false);
+            setOpaque(false);
+            setFont(new Font("Segoe UI", Font.BOLD, 12));
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+            int w = getWidth();
+            int h = getHeight();
+
+            if (!isEnabled()) {
+                g2.setColor(new Color(226, 232, 240));
+                g2.fillRoundRect(0, 0, w, h, 6, 6);
+                g2.setColor(new Color(148, 163, 184));
+            } else {
+                if (getModel().isPressed()) {
+                    g2.setColor(bg.darker());
+                } else if (getModel().isRollover()) {
+                    g2.setColor(bg.brighter());
+                } else {
+                    g2.setColor(bg);
+                }
+                g2.fillRoundRect(0, 0, w, h, 6, 6);
+                g2.setColor(fg);
+            }
+
+            FontMetrics fm = g2.getFontMetrics(getFont());
+            String text = getText();
+            int tw = fm.stringWidth(text);
+            int th = fm.getAscent();
+            int x = (w - tw) / 2;
+            int y = (h + th - fm.getDescent()) / 2;
+
+            g2.drawString(text, x, y);
+            g2.dispose();
+        }
+    }
+
+    // =====================================================================
+    // ĐÈN LED TRẠNG THÁI TỰ VẼ - KHÔNG BỊ LỖI FONT
+    // =====================================================================
+
+    private static class StatusBadgeLabel extends JPanel {
+        private boolean isRunning = false;
+        private String text = "ĐÃ DỪNG";
+
+        public StatusBadgeLabel() {
+            setOpaque(false);
+        }
+
+        public void setStatus(boolean running, String txt) {
+            this.isRunning = running;
+            this.text = txt;
+            repaint();
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+            Color dotColor = isRunning ? new Color(22, 163, 74) : new Color(220, 38, 38);
+            g2.setColor(dotColor);
+            g2.fillOval(2, 6, 10, 10);
+
+            g2.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            g2.setColor(dotColor);
+            g2.drawString(text, 18, 15);
+            g2.dispose();
+        }
+
+        @Override
+        public Dimension getPreferredSize() {
+            return new Dimension(170, 22);
+        }
+    }
+
+    // =====================================================================
+    // VECTOR ICONS (KHÔNG DÙNG EMOJI)
+    // =====================================================================
+
+    private static class FolderVectorIcon implements Icon {
+        private final int width, height;
+        FolderVectorIcon(int w, int h) { width = w; height = h; }
+        @Override public int getIconWidth() { return width; }
+        @Override public int getIconHeight() { return height; }
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(new Color(217, 119, 6));
+            g2.fillRoundRect(x + 1, y + 2, 7, 5, 2, 2);
+            g2.setColor(new Color(245, 158, 11));
+            g2.fillRoundRect(x + 1, y + 4, width - 2, height - 5, 3, 3);
+            g2.dispose();
+        }
+    }
+
+    private static class FileVectorIcon implements Icon {
+        private final int width, height;
+        FileVectorIcon(int w, int h) { width = w; height = h; }
+        @Override public int getIconWidth() { return width; }
+        @Override public int getIconHeight() { return height; }
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            int px = x + 2, py = y + 1, pw = width - 4, ph = height - 2;
+            g2.setColor(Color.WHITE);
+            g2.fillRoundRect(px, py, pw, ph, 2, 2);
+            g2.setColor(new Color(148, 163, 184));
+            g2.drawRoundRect(px, py, pw, ph, 2, 2);
+            g2.setColor(new Color(203, 213, 225));
+            g2.drawLine(px + 3, py + 4, px + pw - 3, py + 4);
+            g2.drawLine(px + 3, py + 7, px + pw - 3, py + 7);
+            g2.dispose();
+        }
+    }
+
+    private static class RootFileNameRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                                                       boolean hasFocus, int row, int column) {
+            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            String val = value != null ? value.toString() : "";
+            boolean isDir = val.startsWith("[DIR]");
+            setIcon(isDir ? FOLDER_ICON : FILE_ICON);
+            setText(val.replace("[DIR] ", "").replace("[FILE] ", ""));
+            setFont(new Font("Segoe UI", isDir ? Font.BOLD : Font.PLAIN, 12));
+            return this;
+        }
+    }
+
     // ==================== TABLE MODELS ====================
     private static class UserTableModel extends AbstractTableModel {
         private final String[] cols = {"Tên đăng nhập", "Mật khẩu", "Ghi chú / Vai trò"};
@@ -551,17 +704,10 @@ public class ServerApp extends JFrame {
             fireTableDataChanged();
         }
 
-        @Override
-        public int getRowCount() { return rows.size(); }
-
-        @Override
-        public int getColumnCount() { return cols.length; }
-
-        @Override
-        public String getColumnName(int col) { return cols[col]; }
-
-        @Override
-        public Object getValueAt(int rowIndex, int columnIndex) {
+        @Override public int getRowCount() { return rows.size(); }
+        @Override public int getColumnCount() { return cols.length; }
+        @Override public String getColumnName(int col) { return cols[col]; }
+        @Override public Object getValueAt(int rowIndex, int columnIndex) {
             return rows.get(rowIndex)[columnIndex];
         }
     }
@@ -588,17 +734,10 @@ public class ServerApp extends JFrame {
             fireTableDataChanged();
         }
 
-        @Override
-        public int getRowCount() { return files.size(); }
-
-        @Override
-        public int getColumnCount() { return cols.length; }
-
-        @Override
-        public String getColumnName(int col) { return cols[col]; }
-
-        @Override
-        public Object getValueAt(int rowIndex, int columnIndex) {
+        @Override public int getRowCount() { return files.size(); }
+        @Override public int getColumnCount() { return cols.length; }
+        @Override public String getColumnName(int col) { return cols[col]; }
+        @Override public Object getValueAt(int rowIndex, int columnIndex) {
             File f = files.get(rowIndex);
             switch (columnIndex) {
                 case 0: return (f.isDirectory() ? "[DIR] " : "[FILE] ") + f.getName();
