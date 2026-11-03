@@ -28,24 +28,22 @@ import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 /**
- * Giao diện đồ họa Java Swing NÂNG CẤP HIỆN ĐẠI (Dual-Pane Explorer) cho FTP Client.
+ * Giao diện đồ họa Java Swing NÂNG CẤP TOÀN DIỆN cho FTP Client Hai Kênh.
  *
- * TÍNH NĂNG NỔI BẬT:
- * 1. Bố cục 2 Panel (Dual-Pane: Máy Cục Bộ <--> Máy Chủ FTP):
- *    - Panel Trái: Trình duyệt tệp tin cục bộ (Local Explorer) kèm icon, lọc tìm kiếm nhanh.
- *    - Panel Phải: Trình duyệt tệp tin máy chủ (Remote Explorer) kèm icon, lọc tìm kiếm nhanh.
- *    - Nhấp đúp vào tệp Local: Tự động Upload lên thư mục Server hiện tại!
- *    - Nhấp đúp vào tệp Server: Tự động Download về thư mục Local hiện tại!
- *    - Nút truyền tải nhanh ở trung tâm: [ Tải lên ➡️ ] và [ ⬅️ Tải xuống ].
- * 2. Thanh Kết Nối Nhanh (Quick Connect Bar) chuyên nghiệp:
- *    - Đèn LED tín hiệu trạng thái kết nối trực quan (Xanh: Đã kết nối, Đỏ: Ngắt kết nối, Vàng: Đang kết nối).
- *    - Nút chọn nhanh tài khoản mẫu (tien, vu, trong, admin, anonymous).
- * 3. Terminal Log Phong Cách Dark Theme (VS Code / Terminal Console):
- *    - Tô màu cú pháp thông minh: Xanh Cyan (lệnh gửi), Xanh lá (phản hồi 2xx), Đỏ (lỗi), Vàng (thông tin).
- *    - Lịch sử lệnh gõ bằng phím Mũi tên Lên/Xuống.
- *    - Nút Ẩn/Hiện Terminal để tối ưu không gian hiển thị bảng tệp tin.
- * 4. Thanh Tiến Trình & Trạng Thái Chi Tiết:
- *    - Tiến trình % mượt mà, tốc độ MB/s thời gian thực, dung lượng truyền, nút Hủy an toàn.
+ * ĐẶC ĐIỂM THIẾT KẾ:
+ * 1. Khắc phục triệt để lỗi mất chữ, chữ biến mất hoặc lỗi ô vuông []:
+ *    - Tuyệt đối không dùng Unicode Emoji surrogate pairs làm lỗi font Windows Swing.
+ *    - Toàn bộ Icon thư mục và tệp tin được vẽ trực tiếp bằng Vector Graphics2D sắc nét.
+ *    - Các nút có màu tùy chỉnh (Kết nối, Ngắt kết nối, Tải lên, Tải xuống, Hủy) được
+ *      tự vẽ qua ModernButton, đảm bảo chữ luôn nổi bật, tương phản cao, căn giữa hoàn hảo.
+ * 2. Bố cục 2 Bảng Dual-Pane Explorer (Máy Cục Bộ <--> Máy Chủ Server):
+ *    - Local Explorer: Xem và duyệt tệp cục bộ, lọc nhanh theo tên.
+ *    - Remote Explorer: Xem và duyệt tệp máy chủ, lọc nhanh theo tên.
+ *    - Nhấp đúp vào tệp Local: Tự động Upload sang Server.
+ *    - Nhấp đúp vào tệp Server: Tự động Download về thư mục Local hiện tại.
+ *    - Nút truyền trung tâm: [ Tải lên >> ] và [ << Tải xuống ].
+ * 3. Quick Connect Bar với đèn LED trạng thái tự co giãn, không bị che khuất địa chỉ IP.
+ * 4. Terminal Console Dark Theme với cú pháp màu tương phản cao, dễ nhìn.
  *
  * Phụ trách phát triển: Nguyễn Anh Vũ (MSSV: 2380602582) - Nhóm 11 (HUTECH)
  */
@@ -55,20 +53,22 @@ public class ClientApp extends JFrame {
     private static final SimpleDateFormat TIME_FMT = new SimpleDateFormat("HH:mm:ss");
     private static final SimpleDateFormat DATE_FMT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
-    // Màu sắc giao diện phẳng hiện đại
-    private static final Color CLR_BG_MAIN = new Color(248, 250, 252);       // Slate 50
+    // Bảng màu giao diện phẳng (Flat UI Colors)
+    private static final Color CLR_BG_MAIN = new Color(245, 247, 250);
     private static final Color CLR_CARD_BG = Color.WHITE;
-    private static final Color CLR_BORDER = new Color(226, 232, 240);        // Slate 200
-    private static final Color CLR_PRIMARY = new Color(37, 99, 235);         // Blue 600
-    private static final Color CLR_PRIMARY_HOVER = new Color(29, 78, 216);   // Blue 700
-    private static final Color CLR_DANGER = new Color(220, 38, 38);          // Red 600
-    private static final Color CLR_SUCCESS = new Color(22, 163, 74);         // Green 600
-    private static final Color CLR_WARNING = new Color(217, 119, 6);         // Amber 600
-    private static final Color CLR_HEADER_BG = new Color(241, 245, 249);     // Slate 100
-    private static final Color CLR_ZEBRA_ROW = new Color(248, 250, 252);     // Zebra row
-    private static final Color CLR_SELECTION = new Color(219, 234, 254);     // Blue 100
-    private static final Color CLR_CONSOLE_BG = new Color(24, 24, 27);       // Zinc 900
-    private static final Color CLR_CONSOLE_BORDER = new Color(39, 39, 42);
+    private static final Color CLR_BORDER = new Color(220, 226, 235);
+    private static final Color CLR_PRIMARY = new Color(24, 119, 242);        // Royal Blue
+    private static final Color CLR_DANGER = new Color(220, 38, 38);          // Crimson Red
+    private static final Color CLR_SUCCESS = new Color(16, 185, 129);        // Emerald Green
+    private static final Color CLR_WARNING = new Color(245, 158, 11);        // Amber
+    private static final Color CLR_HEADER_BG = new Color(238, 242, 246);
+    private static final Color CLR_ZEBRA_ROW = new Color(250, 252, 255);
+    private static final Color CLR_SELECTION = new Color(219, 234, 254);
+    private static final Color CLR_CONSOLE_BG = new Color(26, 27, 30);       // Dark Slate
+
+    // Icon Vector vẽ bằng Graphics2D (hoàn toàn không bị lỗi font hay ô vuông)
+    private static final Icon FOLDER_ICON = new FolderVectorIcon(16, 16);
+    private static final Icon FILE_ICON = new FileVectorIcon(16, 16);
 
     private final FtpClientController controller = new FtpClientController();
     private final ExecutorService background = Executors.newCachedThreadPool(r -> {
@@ -78,47 +78,47 @@ public class ClientApp extends JFrame {
     });
 
     // --- Khung Đăng Nhập Nhanh (Quick Connect) ---
-    private final JTextField hostField = createStyledTextField("127.0.0.1", 11);
+    private final JTextField hostField = createStyledTextField("127.0.0.1", 10);
     private final JTextField portField = createStyledTextField(String.valueOf(FtpClientController.DEFAULT_PORT), 4);
     private final JTextField userField = createStyledTextField("vu", 8);
     private final JPasswordField passField = new JPasswordField("123456", 8);
-    private final JButton connectBtn = createStyledButton("⚡ Kết nối", CLR_PRIMARY, Color.WHITE);
-    private final JButton disconnectBtn = createStyledButton("🔌 Ngắt kết nối", CLR_DANGER, Color.WHITE);
+    private final ModernButton connectBtn = new ModernButton("Kết nối", CLR_PRIMARY, Color.WHITE);
+    private final ModernButton disconnectBtn = new ModernButton("Ngắt kết nối", CLR_DANGER, Color.WHITE);
     private final JComboBox<String> sampleAccountsBox = new JComboBox<>(new String[]{
-            "👤 Tài khoản mẫu...", "vu (123456)", "tien (123456)", "trong (123456)", "admin (admin123)", "anonymous"
+            "Tài khoản mẫu...", "vu (123456)", "tien (123456)", "trong (123456)", "admin (admin123)", "anonymous"
     });
     private final ConnectionStatusBadge statusBadge = new ConnectionStatusBadge();
 
     // --- Thanh Công Cụ Chính (Top Toolbar) ---
-    private final JButton toolbarRefreshBtn = createIconButton("🔄 Làm mới tất cả", "Làm mới cả bảng cục bộ và máy chủ (F5)");
-    private final JButton toolbarUploadBtn = createIconButton("⬆️ Tải lên (Local ➔ Server)", "Tải các tệp đang chọn bên máy cục bộ lên Server");
-    private final JButton toolbarDownloadBtn = createIconButton("⬇️ Tải xuống (Server ➔ Local)", "Tải các tệp đang chọn bên Server về máy cục bộ");
-    private final JButton toolbarMkdirBtn = createIconButton("📁 Tạo thư mục", "Tạo thư mục mới trên Server (MKD)");
-    private final JButton toolbarDeleteBtn = createIconButton("🗑️ Xóa", "Xóa tệp/thư mục đang chọn trên Server (DELE/RMD)");
-    private final JButton toolbarToggleLogBtn = createIconButton("📟 Ẩn/Hiện Nhật ký", "Bật hoặc tắt khung bảng điều khiển dòng lệnh");
+    private final ModernButton toolbarRefreshBtn = new ModernButton("Làm mới tất cả", null, new Color(30, 41, 59));
+    private final ModernButton toolbarUploadBtn = new ModernButton("Tải lên (-> Server)", new Color(241, 245, 249), new Color(15, 23, 42));
+    private final ModernButton toolbarDownloadBtn = new ModernButton("Tải xuống (<- Local)", new Color(241, 245, 249), new Color(15, 23, 42));
+    private final ModernButton toolbarMkdirBtn = new ModernButton("Tạo thư mục", null, new Color(30, 41, 59));
+    private final ModernButton toolbarDeleteBtn = new ModernButton("Xóa", null, new Color(185, 28, 28));
+    private final ModernButton toolbarToggleLogBtn = new ModernButton("Nhật ký (Bật/Tắt)", null, new Color(71, 85, 105));
 
     // --- Bảng Cục Bộ (Local Explorer - Left Pane) ---
     private File currentLocalDir = new File(System.getProperty("user.home"));
     private final JTextField localPathField = createStyledTextField(currentLocalDir.getAbsolutePath(), 15);
     private final JTextField localSearchField = createStyledTextField("", 10);
-    private final JButton localUpBtn = createSmallButton("⬆️ Lên", "Lên thư mục cha");
-    private final JButton localHomeBtn = createSmallButton("🏠 Home", "Về thư mục người dùng cá nhân");
-    private final JButton localRefreshBtn = createSmallButton("🔄", "Làm mới danh sách tệp cục bộ");
+    private final ModernButton localUpBtn = new ModernButton("Lên (..)", null, new Color(30, 41, 59));
+    private final ModernButton localHomeBtn = new ModernButton("Home", null, new Color(30, 41, 59));
+    private final ModernButton localRefreshBtn = new ModernButton("Tải lại", null, new Color(30, 41, 59));
     private final LocalFileTableModel localTableModel = new LocalFileTableModel();
     private final JTable localTable = new JTable(localTableModel);
     private final JLabel localSummaryLabel = new JLabel("0 mục");
 
-    // --- Nút Chuyển Giao Trung Tâm (Transfer Middle Panel) ---
-    private final JButton centerUploadBtn = createStyledButton("Tải lên ➔", CLR_PRIMARY, Color.WHITE);
-    private final JButton centerDownloadBtn = createStyledButton("⬅ Tải xuống", new Color(13, 148, 136), Color.WHITE);
+    // --- Nút Chuyển Giao Trung Tâm (Center Action Buttons) ---
+    private final ModernButton centerUploadBtn = new ModernButton("Tải lên >>", CLR_PRIMARY, Color.WHITE);
+    private final ModernButton centerDownloadBtn = new ModernButton("<< Tải xuống", new Color(13, 148, 136), Color.WHITE);
 
     // --- Bảng Máy Chủ (Remote Server Explorer - Right Pane) ---
     private String currentRemotePath = "/";
     private final JTextField remotePathField = createStyledTextField("/", 15);
     private final JTextField remoteSearchField = createStyledTextField("", 10);
-    private final JButton remoteUpBtn = createSmallButton("⬆️ Lên", "Lên thư mục cha trên Server (CDUP)");
-    private final JButton remoteRootBtn = createSmallButton("🌐 Gốc /", "Về thư mục gốc của Server");
-    private final JButton remoteRefreshBtn = createSmallButton("🔄", "Làm mới danh sách tệp Server (LIST)");
+    private final ModernButton remoteUpBtn = new ModernButton("Lên (..)", null, new Color(30, 41, 59));
+    private final ModernButton remoteRootBtn = new ModernButton("Gốc (/)", null, new Color(30, 41, 59));
+    private final ModernButton remoteRefreshBtn = new ModernButton("Tải lại", null, new Color(30, 41, 59));
     private final RemoteFileTableModel remoteTableModel = new RemoteFileTableModel();
     private final JTable remoteTable = new JTable(remoteTableModel);
     private final JLabel remoteSummaryLabel = new JLabel("Chưa kết nối");
@@ -126,8 +126,8 @@ public class ClientApp extends JFrame {
     // --- Khung Log Terminal (Dark Console) ---
     private final JTextPane consolePane = new JTextPane();
     private final JTextField consoleCmdField = createStyledTextField("", 25);
-    private final JButton consoleSendBtn = createStyledButton("Gửi lệnh", new Color(51, 65, 85), Color.WHITE);
-    private final JButton consoleClearBtn = createSmallButton("🧹 Xóa", "Xóa toàn bộ nội dung nhật ký");
+    private final ModernButton consoleSendBtn = new ModernButton("Gửi lệnh", new Color(51, 65, 85), Color.WHITE);
+    private final ModernButton consoleClearBtn = new ModernButton("Xóa log", null, new Color(71, 85, 105));
     private final List<String> commandHistory = new ArrayList<>();
     private int commandHistoryIndex = -1;
     private JSplitPane mainVerticalSplit;
@@ -138,7 +138,7 @@ public class ClientApp extends JFrame {
     private final JProgressBar progressBar = new JProgressBar(0, 100);
     private final JLabel statusTextLabel = new JLabel("Sẵn sàng.");
     private final JLabel transferDetailLabel = new JLabel("");
-    private final JButton cancelTransferBtn = createStyledButton("✖ Hủy", CLR_DANGER, Color.WHITE);
+    private final ModernButton cancelTransferBtn = new ModernButton("Hủy", CLR_DANGER, Color.WHITE);
 
     private FileTransferTask currentTransfer;
 
@@ -168,7 +168,7 @@ public class ClientApp extends JFrame {
         });
 
         setSize(1180, 780);
-        setMinimumSize(new Dimension(860, 580));
+        setMinimumSize(new Dimension(880, 580));
         setLocationRelativeTo(null);
     }
 
@@ -177,11 +177,9 @@ public class ClientApp extends JFrame {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception ignored) {
         }
-        // Thiết lập font Segoe UI / San Francisco hiện đại
         Font baseFont = new Font("Segoe UI", Font.PLAIN, 12);
         Font boldFont = new Font("Segoe UI", Font.BOLD, 12);
         UIManager.put("Label.font", baseFont);
-        UIManager.put("Button.font", boldFont);
         UIManager.put("TextField.font", baseFont);
         UIManager.put("Table.font", baseFont);
         UIManager.put("TableHeader.font", boldFont);
@@ -233,7 +231,7 @@ public class ClientApp extends JFrame {
         JPanel fields = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
         fields.setOpaque(false);
 
-        fields.add(createHeaderLabel("🌐 Máy chủ:"));
+        fields.add(createHeaderLabel("Máy chủ:"));
         fields.add(hostField);
         fields.add(createHeaderLabel("Cổng:"));
         fields.add(portField);
@@ -241,26 +239,27 @@ public class ClientApp extends JFrame {
         fields.add(userField);
         fields.add(createHeaderLabel("Mật khẩu:"));
         passField.setPreferredSize(new Dimension(85, 26));
+        passField.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         passField.setBorder(BorderFactory.createCompoundBorder(
                 new LineBorder(CLR_BORDER, 1, true),
                 new EmptyBorder(2, 6, 2, 6)
         ));
         fields.add(passField);
 
-        connectBtn.setPreferredSize(new Dimension(100, 28));
+        connectBtn.setPreferredSize(new Dimension(95, 28));
         disconnectBtn.setPreferredSize(new Dimension(115, 28));
         fields.add(connectBtn);
         fields.add(disconnectBtn);
 
-        sampleAccountsBox.setPreferredSize(new Dimension(150, 27));
+        sampleAccountsBox.setPreferredSize(new Dimension(145, 27));
         sampleAccountsBox.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         sampleAccountsBox.setToolTipText("Chọn nhanh tài khoản thử nghiệm của nhóm");
         sampleAccountsBox.addActionListener(e -> applySampleAccount());
         fields.add(sampleAccountsBox);
 
-        bar.add(fields, BorderLayout.WEST);
+        bar.add(fields, BorderLayout.CENTER);
 
-        JPanel statusWrapper = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 4));
+        JPanel statusWrapper = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 2));
         statusWrapper.setOpaque(false);
         statusWrapper.add(statusBadge);
         bar.add(statusWrapper, BorderLayout.EAST);
@@ -273,6 +272,13 @@ public class ClientApp extends JFrame {
         JPanel bar = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
         bar.setBackground(new Color(241, 245, 249));
         bar.setBorder(new MatteBorder(0, 0, 1, 0, CLR_BORDER));
+
+        toolbarRefreshBtn.setPreferredSize(new Dimension(115, 27));
+        toolbarUploadBtn.setPreferredSize(new Dimension(145, 27));
+        toolbarDownloadBtn.setPreferredSize(new Dimension(145, 27));
+        toolbarMkdirBtn.setPreferredSize(new Dimension(105, 27));
+        toolbarDeleteBtn.setPreferredSize(new Dimension(75, 27));
+        toolbarToggleLogBtn.setPreferredSize(new Dimension(125, 27));
 
         bar.add(toolbarRefreshBtn);
         bar.add(createSeparator());
@@ -305,6 +311,8 @@ public class ClientApp extends JFrame {
         gbc.insets = new Insets(6, 2, 6, 2);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
+        centerUploadBtn.setPreferredSize(new Dimension(110, 30));
+        centerDownloadBtn.setPreferredSize(new Dimension(110, 30));
         centerUploadBtn.setToolTipText("Tải lên các tệp đang chọn từ Máy cục bộ sang Máy chủ");
         centerDownloadBtn.setToolTipText("Tải xuống các tệp đang chọn từ Máy chủ về Máy cục bộ");
         centerTransferPanel.add(centerUploadBtn, gbc);
@@ -339,14 +347,14 @@ public class ClientApp extends JFrame {
 
         JPanel titleRow = new JPanel(new BorderLayout());
         titleRow.setOpaque(false);
-        JLabel titleLabel = new JLabel("💻 MÁY CỤC BỘ (LOCAL DISK)");
+        JLabel titleLabel = new JLabel("MÁY CỤC BỘ (LOCAL DISK)");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
         titleLabel.setForeground(new Color(30, 41, 59));
         titleRow.add(titleLabel, BorderLayout.WEST);
 
         JPanel searchWrapper = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
         searchWrapper.setOpaque(false);
-        searchWrapper.add(new JLabel("🔍 Lọc:"));
+        searchWrapper.add(new JLabel("Tìm kiếm:"));
         localSearchField.setToolTipText("Gõ để lọc nhanh tệp tin cục bộ");
         searchWrapper.add(localSearchField);
         titleRow.add(searchWrapper, BorderLayout.EAST);
@@ -356,6 +364,9 @@ public class ClientApp extends JFrame {
         pathRow.setOpaque(false);
         JPanel navBtns = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0));
         navBtns.setOpaque(false);
+        localUpBtn.setPreferredSize(new Dimension(70, 24));
+        localHomeBtn.setPreferredSize(new Dimension(65, 24));
+        localRefreshBtn.setPreferredSize(new Dimension(65, 24));
         navBtns.add(localUpBtn);
         navBtns.add(localHomeBtn);
         navBtns.add(localRefreshBtn);
@@ -368,7 +379,7 @@ public class ClientApp extends JFrame {
         // Bảng tệp Local
         setupTableAppearance(localTable);
         localTable.setModel(localTableModel);
-        localTable.getColumnModel().getColumn(0).setPreferredWidth(220);
+        localTable.getColumnModel().getColumn(0).setPreferredWidth(230);
         localTable.getColumnModel().getColumn(1).setPreferredWidth(60);
         localTable.getColumnModel().getColumn(2).setPreferredWidth(85);
         localTable.getColumnModel().getColumn(3).setPreferredWidth(125);
@@ -382,7 +393,7 @@ public class ClientApp extends JFrame {
         panel.add(scroll, BorderLayout.CENTER);
 
         // Tóm tắt Local
-        localSummaryLabel.setFont(new Font("Segoe UI", Font.ITALIC, 11));
+        localSummaryLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         localSummaryLabel.setForeground(new Color(100, 116, 139));
         panel.add(localSummaryLabel, BorderLayout.SOUTH);
 
@@ -404,14 +415,14 @@ public class ClientApp extends JFrame {
 
         JPanel titleRow = new JPanel(new BorderLayout());
         titleRow.setOpaque(false);
-        JLabel titleLabel = new JLabel("🌐 MÁY CHỦ FTP (REMOTE SERVER)");
+        JLabel titleLabel = new JLabel("MÁY CHỦ FTP (REMOTE SERVER)");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
         titleLabel.setForeground(CLR_PRIMARY);
         titleRow.add(titleLabel, BorderLayout.WEST);
 
         JPanel searchWrapper = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
         searchWrapper.setOpaque(false);
-        searchWrapper.add(new JLabel("🔍 Lọc:"));
+        searchWrapper.add(new JLabel("Tìm kiếm:"));
         remoteSearchField.setToolTipText("Gõ để lọc nhanh tệp tin trên máy chủ");
         searchWrapper.add(remoteSearchField);
         titleRow.add(searchWrapper, BorderLayout.EAST);
@@ -421,6 +432,9 @@ public class ClientApp extends JFrame {
         pathRow.setOpaque(false);
         JPanel navBtns = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0));
         navBtns.setOpaque(false);
+        remoteUpBtn.setPreferredSize(new Dimension(70, 24));
+        remoteRootBtn.setPreferredSize(new Dimension(65, 24));
+        remoteRefreshBtn.setPreferredSize(new Dimension(65, 24));
         navBtns.add(remoteUpBtn);
         navBtns.add(remoteRootBtn);
         navBtns.add(remoteRefreshBtn);
@@ -433,7 +447,7 @@ public class ClientApp extends JFrame {
         // Bảng tệp Remote
         setupTableAppearance(remoteTable);
         remoteTable.setModel(remoteTableModel);
-        remoteTable.getColumnModel().getColumn(0).setPreferredWidth(220);
+        remoteTable.getColumnModel().getColumn(0).setPreferredWidth(230);
         remoteTable.getColumnModel().getColumn(1).setPreferredWidth(60);
         remoteTable.getColumnModel().getColumn(2).setPreferredWidth(85);
         remoteTable.getColumnModel().getColumn(3).setPreferredWidth(125);
@@ -449,7 +463,7 @@ public class ClientApp extends JFrame {
         panel.add(scroll, BorderLayout.CENTER);
 
         // Tóm tắt Remote
-        remoteSummaryLabel.setFont(new Font("Segoe UI", Font.ITALIC, 11));
+        remoteSummaryLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         remoteSummaryLabel.setForeground(new Color(100, 116, 139));
         panel.add(remoteSummaryLabel, BorderLayout.SOUTH);
 
@@ -468,13 +482,14 @@ public class ClientApp extends JFrame {
         // Thanh tiêu đề Console
         JPanel bar = new JPanel(new BorderLayout());
         bar.setOpaque(false);
-        JLabel title = new JLabel("📟 NHẬT KÝ LỆNH CONTROL CHANNEL & TRẠNG THÁI GIAO THỨC");
+        JLabel title = new JLabel("NHẬT KÝ LỆNH CONTROL CHANNEL & TRẠNG THÁI GIAO THỨC");
         title.setFont(new Font("Segoe UI", Font.BOLD, 11));
         title.setForeground(new Color(71, 85, 105));
         bar.add(title, BorderLayout.WEST);
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
         actions.setOpaque(false);
+        consoleClearBtn.setPreferredSize(new Dimension(75, 23));
         actions.add(consoleClearBtn);
         bar.add(actions, BorderLayout.EAST);
         panel.add(bar, BorderLayout.NORTH);
@@ -487,7 +502,8 @@ public class ClientApp extends JFrame {
         consolePane.setBorder(new EmptyBorder(4, 6, 4, 6));
 
         JScrollPane scroll = new JScrollPane(consolePane);
-        scroll.setBorder(new LineBorder(CLR_CONSOLE_BORDER, 1));
+        scroll.setBorder(new LineBorder(new Color(51, 65, 85), 1));
+        scroll.setPreferredSize(new Dimension(800, 130));
         panel.add(scroll, BorderLayout.CENTER);
 
         // Ô gõ lệnh thủ công
@@ -499,6 +515,7 @@ public class ClientApp extends JFrame {
         inputBar.add(prompt, BorderLayout.WEST);
         consoleCmdField.setToolTipText("Nhập lệnh FTP thủ công (ví dụ: PWD, LIST, SIZE welcome.txt, NOOP, SYST, HELP)");
         inputBar.add(consoleCmdField, BorderLayout.CENTER);
+        consoleSendBtn.setPreferredSize(new Dimension(85, 26));
         inputBar.add(consoleSendBtn, BorderLayout.EAST);
         panel.add(inputBar, BorderLayout.SOUTH);
 
@@ -532,7 +549,6 @@ public class ClientApp extends JFrame {
         progressPanel.add(progressBar);
 
         cancelTransferBtn.setPreferredSize(new Dimension(75, 22));
-        cancelTransferBtn.setFont(new Font("Segoe UI", Font.BOLD, 11));
         cancelTransferBtn.setEnabled(false);
         progressPanel.add(cancelTransferBtn);
 
@@ -764,7 +780,7 @@ public class ClientApp extends JFrame {
         });
 
         localTableModel.setEntries(list);
-        localSummaryLabel.setText(String.format("📁 %d thư mục, 📄 %d tệp (%s)",
+        localSummaryLabel.setText(String.format("%d thư mục, %d tệp (%s)",
                 dirsCount, list.size() - dirsCount, FtpFileEntry.formatSize(totalBytes)));
         localUpBtn.setEnabled(dir.getParentFile() != null);
     }
@@ -781,7 +797,6 @@ public class ClientApp extends JFrame {
         if (entry.isDirectory) {
             loadLocalDirectory(entry.file);
         } else {
-            // Nhấp đúp vào file local: thực hiện Upload sang Server nếu đã kết nối
             if (controller.isLoggedIn()) {
                 startUpload(java.util.Collections.singletonList(entry.file));
             } else {
@@ -802,9 +817,9 @@ public class ClientApp extends JFrame {
 
     private JPopupMenu buildLocalPopupMenu() {
         JPopupMenu menu = new JPopupMenu();
-        JMenuItem up = new JMenuItem("⬆️ Tải lên Server (Upload)");
+        JMenuItem up = new JMenuItem("Tải lên Server (Upload)");
         up.addActionListener(e -> uploadSelectedLocalFiles());
-        JMenuItem open = new JMenuItem("📂 Mở bằng ứng dụng hệ thống");
+        JMenuItem open = new JMenuItem("Mở bằng ứng dụng hệ thống");
         open.addActionListener(e -> {
             int row = localTable.getSelectedRow();
             if (row >= 0) {
@@ -812,7 +827,7 @@ public class ClientApp extends JFrame {
                 openFileWithSystemDefault(entry.file);
             }
         });
-        JMenuItem refresh = new JMenuItem("🔄 Làm mới");
+        JMenuItem refresh = new JMenuItem("Làm mới");
         refresh.addActionListener(e -> loadLocalDirectory(currentLocalDir));
 
         menu.add(up);
@@ -928,7 +943,7 @@ public class ClientApp extends JFrame {
             if (e.isDirectory()) dirs++;
             else if (e.getSize() > 0) bytes += e.getSize();
         }
-        remoteSummaryLabel.setText(String.format("📁 %d thư mục, 📄 %d tệp (%s)",
+        remoteSummaryLabel.setText(String.format("%d thư mục, %d tệp (%s)",
                 dirs, listing.entries.size() - dirs, FtpFileEntry.formatSize(bytes)));
         setStatus(String.format("Thư mục: %s (Tổng: %d mục)", listing.path, listing.entries.size()));
         updateUiState();
@@ -956,7 +971,6 @@ public class ClientApp extends JFrame {
         if (entry.isDirectory()) {
             navigateRemote(entry.getName());
         } else {
-            // Nhấp đúp vào file Server: tự động Download về thư mục Local hiện tại
             downloadSelectedRemoteFiles();
         }
     }
@@ -1021,17 +1035,17 @@ public class ClientApp extends JFrame {
 
     private JPopupMenu buildRemotePopupMenu() {
         JPopupMenu menu = new JPopupMenu();
-        JMenuItem dl = new JMenuItem("⬇️ Tải xuống máy cục bộ (Download)");
+        JMenuItem dl = new JMenuItem("Tải xuống máy cục bộ (Download)");
         dl.addActionListener(e -> downloadSelectedRemoteFiles());
-        JMenuItem open = new JMenuItem("📂 Mở thư mục");
+        JMenuItem open = new JMenuItem("Mở thư mục");
         open.addActionListener(e -> openSelectedRemote());
-        JMenuItem size = new JMenuItem("📏 Xem kích thước chính xác (SIZE)");
+        JMenuItem size = new JMenuItem("Xem kích thước chính xác (SIZE)");
         size.addActionListener(e -> showRemoteSize());
-        JMenuItem mkdir = new JMenuItem("📁 Tạo thư mục mới tại đây");
+        JMenuItem mkdir = new JMenuItem("Tạo thư mục mới tại đây");
         mkdir.addActionListener(e -> makeRemoteDirectory());
-        JMenuItem del = new JMenuItem("🗑️ Xóa mục đã chọn");
+        JMenuItem del = new JMenuItem("Xóa mục đã chọn");
         del.addActionListener(e -> deleteSelectedRemote());
-        JMenuItem refresh = new JMenuItem("🔄 Làm mới");
+        JMenuItem refresh = new JMenuItem("Làm mới");
         refresh.addActionListener(e -> refreshRemoteListing());
 
         menu.add(dl);
@@ -1109,7 +1123,6 @@ public class ClientApp extends JFrame {
             return;
         }
 
-        // Tải xuống trực tiếp vào thư mục cục bộ đang mở trên Panel Trái
         List<FileTransferTask.Job> jobs = new ArrayList<>();
         for (FtpFileEntry e : files) {
             File target = new File(currentLocalDir, e.getName());
@@ -1161,7 +1174,6 @@ public class ClientApp extends JFrame {
                 transferDetailLabel.setText("");
                 cancelTransferBtn.setEnabled(false);
 
-                // Cập nhật lại cả 2 bảng
                 loadLocalDirectory(currentLocalDir);
                 if (controller.isLoggedIn()) refreshRemoteListing();
 
@@ -1222,21 +1234,22 @@ public class ClientApp extends JFrame {
 
                 Style style = consolePane.addStyle("LogStyle", null);
                 if (line.startsWith(">>")) {
-                    StyleConstants.setForeground(style, new Color(78, 201, 176));   // Cyan
+                    StyleConstants.setForeground(style, new Color(56, 189, 248));   // Sky Blue lệnh gửi
                     StyleConstants.setBold(style, true);
                 } else if (line.startsWith("<<")) {
                     if (line.contains(" 5") || line.contains(" 4")) {
-                        StyleConstants.setForeground(style, new Color(244, 71, 71)); // Red error
+                        StyleConstants.setForeground(style, new Color(248, 113, 113)); // Red lỗi
+                        StyleConstants.setBold(style, true);
                     } else {
-                        StyleConstants.setForeground(style, new Color(152, 195, 121)); // Green success
+                        StyleConstants.setForeground(style, new Color(74, 222, 128)); // Bright Green thành công
                     }
                 } else if (line.startsWith("***")) {
-                    StyleConstants.setForeground(style, new Color(229, 192, 123));  // Amber info
+                    StyleConstants.setForeground(style, new Color(251, 191, 36));   // Yellow info
                 } else if (line.startsWith("!!!")) {
-                    StyleConstants.setForeground(style, new Color(224, 108, 117));  // Red critical
+                    StyleConstants.setForeground(style, new Color(244, 63, 94));    // Rose error
                     StyleConstants.setBold(style, true);
                 } else {
-                    StyleConstants.setForeground(style, new Color(212, 212, 216));  // Light gray
+                    StyleConstants.setForeground(style, new Color(226, 232, 240));  // White text
                 }
 
                 doc.insertString(doc.getLength(), stamped, style);
@@ -1298,8 +1311,93 @@ public class ClientApp extends JFrame {
     }
 
     // =====================================================================
-    // UI COMPONENTS FACTORIES & RENDERERS
+    // UI COMPONENTS FACTORIES & CUSTOM BUTTON
     // =====================================================================
+
+    /**
+     * Nút bấm hiện đại tự vẽ:
+     * - Hoàn toàn không phụ thuộc Native Windows Button UI bị lỗi mất chữ / đen / trắng.
+     * - Chữ luôn căn giữa, tương phản rõ ràng, đổi màu khi hover / click / disabled.
+     */
+    public static class ModernButton extends JButton {
+        private final Color normalBg;
+        private final Color normalFg;
+
+        public ModernButton(String text, Color bg, Color fg) {
+            super(text);
+            this.normalBg = bg;
+            this.normalFg = fg != null ? fg : new Color(30, 41, 59);
+            setContentAreaFilled(false);
+            setFocusPainted(false);
+            setBorderPainted(false);
+            setOpaque(false);
+            setFont(new Font("Segoe UI", Font.BOLD, 12));
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            setMargin(new Insets(2, 6, 2, 6));
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+            int w = getWidth();
+            int h = getHeight();
+
+            if (normalBg != null) {
+                if (!isEnabled()) {
+                    g2.setColor(new Color(226, 232, 240));
+                    g2.fillRoundRect(0, 0, w, h, 6, 6);
+                } else if (getModel().isPressed()) {
+                    g2.setColor(normalBg.darker());
+                    g2.fillRoundRect(0, 0, w, h, 6, 6);
+                } else if (getModel().isRollover()) {
+                    g2.setColor(blendColor(normalBg, Color.WHITE, 0.15f));
+                    g2.fillRoundRect(0, 0, w, h, 6, 6);
+                } else {
+                    g2.setColor(normalBg);
+                    g2.fillRoundRect(0, 0, w, h, 6, 6);
+                }
+            } else {
+                // Nút outline chuẩn
+                if (getModel().isRollover() && isEnabled()) {
+                    g2.setColor(new Color(241, 245, 249));
+                    g2.fillRoundRect(0, 0, w, h, 6, 6);
+                } else {
+                    g2.setColor(Color.WHITE);
+                    g2.fillRoundRect(0, 0, w, h, 6, 6);
+                }
+                g2.setColor(isEnabled() ? new Color(203, 213, 225) : new Color(226, 232, 240));
+                g2.drawRoundRect(0, 0, w - 1, h - 1, 6, 6);
+            }
+
+            // Vẽ chữ căn giữa hoàn hảo
+            FontMetrics fm = g2.getFontMetrics(getFont());
+            String text = getText();
+            int tw = fm.stringWidth(text);
+            int th = fm.getAscent();
+            int x = (w - tw) / 2;
+            int y = (h + th - fm.getDescent()) / 2;
+
+            if (!isEnabled()) {
+                g2.setColor(new Color(148, 163, 184));
+            } else {
+                g2.setColor(normalFg);
+            }
+            g2.drawString(text, x, y);
+            g2.dispose();
+        }
+
+        private static Color blendColor(Color c1, Color c2, float ratio) {
+            float r = 1 - ratio;
+            return new Color(
+                    Math.min(255, (int) (c1.getRed() * r + c2.getRed() * ratio)),
+                    Math.min(255, (int) (c1.getGreen() * r + c2.getGreen() * ratio)),
+                    Math.min(255, (int) (c1.getBlue() * r + c2.getBlue() * ratio))
+            );
+        }
+    }
 
     private static JTextField createStyledTextField(String text, int cols) {
         JTextField f = new JTextField(text, cols);
@@ -1311,53 +1409,10 @@ public class ClientApp extends JFrame {
         return f;
     }
 
-    private static JButton createStyledButton(String text, Color bg, Color fg) {
-        JButton b = new JButton(text);
-        b.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        b.setBackground(bg);
-        b.setForeground(fg);
-        b.setFocusPainted(false);
-        b.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(bg.darker(), 1, true),
-                new EmptyBorder(4, 10, 4, 10)
-        ));
-        b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        return b;
-    }
-
-    private static JButton createIconButton(String text, String tooltip) {
-        JButton b = new JButton(text);
-        b.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        b.setBackground(Color.WHITE);
-        b.setForeground(new Color(30, 41, 59));
-        b.setFocusPainted(false);
-        b.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(CLR_BORDER, 1, true),
-                new EmptyBorder(4, 8, 4, 8)
-        ));
-        b.setToolTipText(tooltip);
-        b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        return b;
-    }
-
-    private static JButton createSmallButton(String text, String tooltip) {
-        JButton b = new JButton(text);
-        b.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        b.setBackground(Color.WHITE);
-        b.setFocusPainted(false);
-        b.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(CLR_BORDER, 1, true),
-                new EmptyBorder(2, 6, 2, 6)
-        ));
-        b.setToolTipText(tooltip);
-        b.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        return b;
-    }
-
     private static JLabel createHeaderLabel(String text) {
         JLabel l = new JLabel(text);
-        l.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        l.setForeground(new Color(71, 85, 105));
+        l.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        l.setForeground(new Color(51, 65, 85));
         return l;
     }
 
@@ -1369,7 +1424,7 @@ public class ClientApp extends JFrame {
     }
 
     private void setupTableAppearance(JTable table) {
-        table.setRowHeight(24);
+        table.setRowHeight(25);
         table.setShowGrid(false);
         table.setIntercellSpacing(new Dimension(0, 0));
         table.setSelectionBackground(CLR_SELECTION);
@@ -1386,26 +1441,91 @@ public class ClientApp extends JFrame {
         table.setRowSorter(sorter);
     }
 
-    private static String getFileEmoji(String name, boolean isDirectory) {
-        if (isDirectory) return "📁";
-        String lower = name.toLowerCase(Locale.ROOT);
-        if (lower.endsWith(".zip") || lower.endsWith(".rar") || lower.endsWith(".7z") || lower.endsWith(".tar") || lower.endsWith(".gz")) return "📦";
-        if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".gif") || lower.endsWith(".bmp") || lower.endsWith(".svg")) return "🖼️";
-        if (lower.endsWith(".txt") || lower.endsWith(".md") || lower.endsWith(".doc") || lower.endsWith(".docx") || lower.endsWith(".pdf") || lower.endsWith(".log")) return "📄";
-        if (lower.endsWith(".java") || lower.endsWith(".py") || lower.endsWith(".class") || lower.endsWith(".exe") || lower.endsWith(".bat") || lower.endsWith(".sh")) return "⚙️";
-        if (lower.endsWith(".mp3") || lower.endsWith(".mp4") || lower.endsWith(".mkv") || lower.endsWith(".avi")) return "🎵";
-        return "📃";
-    }
-
     private static String PatternQuote(String s) {
         return java.util.regex.Pattern.quote(s);
     }
 
     // =====================================================================
-    // MODELS & RENDERERS
+    // VECTOR ICONS (VẼ THƯ MỤC VÀ TỆP TIN BẰNG VECTOR GRAPHICS)
     // =====================================================================
 
-    /** Model cho bảng tệp Local */
+    /** Icon Thư mục màu vàng cam - không bao giờ bị ô vuông [] */
+    private static class FolderVectorIcon implements Icon {
+        private final int width;
+        private final int height;
+
+        FolderVectorIcon(int w, int h) {
+            this.width = w;
+            this.height = h;
+        }
+
+        @Override public int getIconWidth() { return width; }
+        @Override public int getIconHeight() { return height; }
+
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            // Nắp folder tab
+            g2.setColor(new Color(217, 119, 6)); // Amber dark
+            g2.fillRoundRect(x + 1, y + 2, 7, 5, 2, 2);
+
+            // Thân folder
+            g2.setColor(new Color(245, 158, 11)); // Amber vibrant
+            g2.fillRoundRect(x + 1, y + 4, width - 2, height - 5, 3, 3);
+
+            // Viền nhẹ
+            g2.setColor(new Color(180, 83, 9));
+            g2.drawRoundRect(x + 1, y + 4, width - 3, height - 6, 3, 3);
+            g2.dispose();
+        }
+    }
+
+    /** Icon Tệp tin màu xanh xám - không bao giờ bị ô vuông [] */
+    private static class FileVectorIcon implements Icon {
+        private final int width;
+        private final int height;
+
+        FileVectorIcon(int w, int h) {
+            this.width = w;
+            this.height = h;
+        }
+
+        @Override public int getIconWidth() { return width; }
+        @Override public int getIconHeight() { return height; }
+
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int px = x + 2;
+            int py = y + 1;
+            int pw = width - 4;
+            int ph = height - 2;
+
+            // Thân giấy
+            g2.setColor(Color.WHITE);
+            g2.fillRoundRect(px, py, pw, ph, 2, 2);
+
+            // Viền tệp
+            g2.setColor(new Color(148, 163, 184));
+            g2.drawRoundRect(px, py, pw, ph, 2, 2);
+
+            // Các dòng chữ mô phỏng
+            g2.setColor(new Color(203, 213, 225));
+            g2.drawLine(px + 3, py + 4, px + pw - 3, py + 4);
+            g2.drawLine(px + 3, py + 7, px + pw - 3, py + 7);
+            g2.drawLine(px + 3, py + 10, px + pw - 5, py + 10);
+            g2.dispose();
+        }
+    }
+
+    // =====================================================================
+    // TABLE MODELS & RENDERERS
+    // =====================================================================
+
     public static class LocalFileEntry {
         public final String name;
         public final boolean isDirectory;
@@ -1453,7 +1573,6 @@ public class ClientApp extends JFrame {
         }
     }
 
-    /** Model cho bảng tệp Server */
     private static class RemoteFileTableModel extends AbstractTableModel {
         private final String[] cols = {"Tên tệp", "Loại", "Kích thước", "Ngày sửa đổi", "Quyền"};
         private List<FtpFileEntry> entries = new ArrayList<>();
@@ -1500,7 +1619,8 @@ public class ClientApp extends JFrame {
             super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
             int mRow = table.convertRowIndexToModel(row);
             LocalFileEntry e = localTableModel.getEntry(mRow);
-            setText(getFileEmoji(e.name, e.isDirectory) + "  " + e.name);
+            setIcon(e.isDirectory ? FOLDER_ICON : FILE_ICON);
+            setText(e.name);
             setFont(new Font("Segoe UI", e.isDirectory ? Font.BOLD : Font.PLAIN, 12));
             if (!isSelected) {
                 setBackground(row % 2 == 0 ? Color.WHITE : CLR_ZEBRA_ROW);
@@ -1516,7 +1636,8 @@ public class ClientApp extends JFrame {
             super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
             int mRow = table.convertRowIndexToModel(row);
             FtpFileEntry e = remoteTableModel.getEntry(mRow);
-            setText(getFileEmoji(e.getName(), e.isDirectory()) + "  " + e.getName());
+            setIcon(e.isDirectory() ? FOLDER_ICON : FILE_ICON);
+            setText(e.getName());
             setFont(new Font("Segoe UI", e.isDirectory() ? Font.BOLD : Font.PLAIN, 12));
             if (!isSelected) {
                 setBackground(row % 2 == 0 ? Color.WHITE : CLR_ZEBRA_ROW);
@@ -1543,7 +1664,6 @@ public class ClientApp extends JFrame {
         }
     }
 
-    /** Kéo thả tệp từ Explorer để Upload */
     private class UploadDropHandler extends TransferHandler {
         @Override
         public boolean canImport(TransferSupport support) {
@@ -1566,7 +1686,7 @@ public class ClientApp extends JFrame {
         }
     }
 
-    /** Đèn LED trạng thái kết nối */
+    /** Đèn LED trạng thái kết nối - tự động tính chiều rộng tránh mất chữ */
     private static class ConnectionStatusBadge extends JPanel {
         enum State { DISCONNECTED, CONNECTING, CONNECTED }
         private State state = State.DISCONNECTED;
@@ -1574,13 +1694,20 @@ public class ClientApp extends JFrame {
 
         ConnectionStatusBadge() {
             setOpaque(false);
-            setPreferredSize(new Dimension(170, 26));
         }
 
         void setStatus(State s, String msg) {
             this.state = s;
             this.text = msg;
+            revalidate();
             repaint();
+        }
+
+        @Override
+        public Dimension getPreferredSize() {
+            FontMetrics fm = getFontMetrics(new Font("Segoe UI", Font.BOLD, 11));
+            int w = 24 + (text != null ? fm.stringWidth(text) : 0) + 12;
+            return new Dimension(Math.max(w, 130), 26);
         }
 
         @Override
@@ -1588,16 +1715,23 @@ public class ClientApp extends JFrame {
             super.paintComponent(g);
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
             Color dotColor = state == State.CONNECTED ? CLR_SUCCESS
                     : (state == State.CONNECTING ? CLR_WARNING : CLR_DANGER);
 
+            // Chấm LED
             g2.setColor(dotColor);
             g2.fillOval(4, 8, 10, 10);
 
+            // Viền mờ LED
+            g2.setColor(new Color(dotColor.getRed(), dotColor.getGreen(), dotColor.getBlue(), 60));
+            g2.drawOval(2, 6, 13, 13);
+
+            // Nhãn chữ
             g2.setFont(new Font("Segoe UI", Font.BOLD, 11));
             g2.setColor(new Color(51, 65, 85));
-            g2.drawString(text, 20, 17);
+            g2.drawString(text, 22, 17);
             g2.dispose();
         }
     }
