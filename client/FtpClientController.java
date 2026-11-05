@@ -13,20 +13,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Bộ điều khiển kết nối FTP phía Client.
- * - Quản lý Control Channel (TCP, mặc định cổng 2121): gửi lệnh văn bản, đọc mã phản hồi.
- * - Mở Data Channel theo cơ chế Passive Mode (PASV) cho LIST / RETR / STOR.
- * - Dùng {@link DataChannelHelper} (module datachannel) để truyền byte và báo tiến độ.
- *
- * Mọi phương thức mạng đều chạy BLOCKING -> giao diện Swing phải gọi từ luồng nền (SwingWorker).
- * Các lệnh được tuần tự hóa bằng {@link #lock} để không bao giờ có 2 lệnh xen kẽ trên Control Channel.
- *
- * Phụ trách: Nguyễn Anh Vũ (MSSV: 2380602582)
- */
 public class FtpClientController {
 
-    /** Lắng nghe nhật ký lệnh gửi đi / phản hồi nhận về (để hiển thị lên khung Log hoặc console). */
     public interface LogListener {
         void onLog(String line);
     }
@@ -58,10 +46,9 @@ public class FtpClientController {
     }
 
     // =====================================================================
-    // KẾT NỐI / XÁC THỰC
+
     // =====================================================================
 
-    /** Mở Control Channel và đọc banner 220 từ Server. */
     public FtpResponse connect(String host, int port) throws IOException {
         lock.lock();
         try {
@@ -87,7 +74,6 @@ public class FtpClientController {
         }
     }
 
-    /** Đăng nhập bằng USER / PASS, sau đó chuyển sang kiểu truyền nhị phân (TYPE I). */
     public void login(String username, String password) throws IOException {
         lock.lock();
         try {
@@ -105,7 +91,6 @@ public class FtpClientController {
         }
     }
 
-    /** Gửi QUIT và đóng kết nối. */
     public void disconnect() {
         lock.lock();
         try {
@@ -135,10 +120,9 @@ public class FtpClientController {
     }
 
     // =====================================================================
-    // GỬI LỆNH / ĐỌC PHẢN HỒI TRÊN CONTROL CHANNEL
+
     // =====================================================================
 
-    /** Gửi một dòng lệnh và chờ phản hồi hoàn chỉnh. */
     public FtpResponse sendCommand(String command) throws IOException {
         lock.lock();
         try {
@@ -153,10 +137,6 @@ public class FtpClientController {
         }
     }
 
-    /**
-     * Đọc một phản hồi từ Server. Hỗ trợ phản hồi nhiều dòng theo RFC 959:
-     * dòng đầu "xyz-..." và kết thúc ở dòng bắt đầu bằng "xyz ".
-     */
     private FtpResponse readResponse() throws IOException {
         String line = readLineOrFail();
         log("<< " + line);
@@ -183,7 +163,7 @@ public class FtpClientController {
         }
         String msg = line.length() > 4 ? line.substring(4) : "";
         if (code == 221 || code == 421) {
-            // Server chủ động đóng phiên (QUIT hoặc timeout)
+
             loggedIn = false;
         }
         return new FtpResponse(code, msg, full.toString());
@@ -199,10 +179,9 @@ public class FtpClientController {
     }
 
     // =====================================================================
-    // CÁC LỆNH THAO TÁC THƯ MỤC / TỆP TIN
+
     // =====================================================================
 
-    /** PWD -> trả về đường dẫn hiện tại (ví dụ "/tailieu"). */
     public String pwd() throws IOException {
         FtpResponse r = sendCommand("PWD");
         expect(r, 257);
@@ -234,7 +213,6 @@ public class FtpClientController {
         sendCommand("NOOP");
     }
 
-    /** SIZE -> kích thước tệp (bytes) hoặc -1 nếu Server không trả lời được. */
     public long size(String name) throws IOException {
         FtpResponse r = sendCommand("SIZE " + name);
         if (r.getCode() == 213) {
@@ -246,10 +224,6 @@ public class FtpClientController {
         return -1;
     }
 
-    /**
-     * Gửi NOOP giữ kết nối nếu Control Channel đang rảnh (không chặn khi đang truyền file).
-     * Server tự ngắt phiên sau 2 phút không có lệnh.
-     */
     public void keepAliveIfIdle() {
         if (!isLoggedIn() || !lock.tryLock()) return;
         try {
@@ -265,7 +239,6 @@ public class FtpClientController {
     // DATA CHANNEL (PASSIVE MODE)
     // =====================================================================
 
-    /** Gửi PASV, phân tích "227 Entering Passive Mode (h1,h2,h3,h4,p1,p2)" và mở Data Socket. */
     private Socket openPassiveDataSocket() throws IOException {
         FtpResponse r = sendCommand("PASV");
         expect(r, 227);
@@ -275,7 +248,7 @@ public class FtpClientController {
         }
         String ip = m.group(1) + "." + m.group(2) + "." + m.group(3) + "." + m.group(4);
         int port = Integer.parseInt(m.group(5)) * 256 + Integer.parseInt(m.group(6));
-        // Nếu Server không biết IP (0.0.0.0) hoặc trả về loopback trong khi Client kết nối từ máy khác -> dùng IP host đã kết nối
+
         if ("0.0.0.0".equals(ip) || ("127.0.0.1".equals(ip) && !"127.0.0.1".equals(host) && !"localhost".equalsIgnoreCase(host))) {
             ip = host;
         }
@@ -288,7 +261,6 @@ public class FtpClientController {
         return data;
     }
 
-    /** LIST -> danh sách tệp/thư mục của thư mục hiện tại. */
     public List<FtpFileEntry> list() throws IOException {
         String raw = listRaw("LIST");
         List<FtpFileEntry> entries = new ArrayList<>();
@@ -301,7 +273,6 @@ public class FtpClientController {
         return entries;
     }
 
-    /** Thực hiện LIST/NLST và trả về nguyên văn văn bản nhận được qua Data Channel. */
     public String listRaw(String command) throws IOException {
         lock.lock();
         Socket data = null;
@@ -330,10 +301,6 @@ public class FtpClientController {
         }
     }
 
-    /**
-     * RETR -> tải tệp từ Server về máy (Download).
-     * @param listener nhận sự kiện tiến độ (có thể null)
-     */
     public long download(String remoteName, File localFile, DataTransferListener listener) throws IOException {
         lock.lock();
         Socket data = null;
@@ -367,7 +334,6 @@ public class FtpClientController {
                 data = null;
             }
 
-            // Luôn đọc phản hồi kết thúc (226 hoặc 426) để Control Channel không bị lệch
             FtpResponse done = readResponse();
             if (transferError != null) throw transferError;
             expect(done, 226);
@@ -377,17 +343,13 @@ public class FtpClientController {
             closeSocket(data);
             activeDataSocket = null;
             if (!ok && fileCreated && localFile.exists()) {
-                // Không để lại tệp tải dở dang
+
                 if (localFile.delete()) log("*** Đã xóa tệp tải dở: " + localFile.getName());
             }
             lock.unlock();
         }
     }
 
-    /**
-     * STOR -> tải tệp từ máy lên Server (Upload).
-     * @param listener nhận sự kiện tiến độ (có thể null)
-     */
     public long upload(File localFile, String remoteName, DataTransferListener listener) throws IOException {
         lock.lock();
         Socket data = null;
@@ -409,7 +371,7 @@ public class FtpClientController {
                 transferError = wrapTransferError(e);
                 transferred = -1;
             } finally {
-                // Đóng Data Socket -> Server nhận EOF và trả 226
+
                 closeSocket(data);
                 activeDataSocket = null;
                 data = null;
@@ -417,7 +379,7 @@ public class FtpClientController {
 
             FtpResponse done = readResponse();
             if (transferError != null) {
-                // Server đã lưu một phần tệp -> xóa để tránh tệp hỏng
+
                 try {
                     sendCommand("DELE " + remoteName);
                 } catch (IOException ignored) {
@@ -433,7 +395,6 @@ public class FtpClientController {
         }
     }
 
-    /** Hủy phiên truyền đang chạy bằng cách đóng Data Socket (gọi từ luồng khác). */
     public void abortTransfer() {
         abortRequested = true;
         Socket s = activeDataSocket;
@@ -450,7 +411,7 @@ public class FtpClientController {
     }
 
     // =====================================================================
-    // TIỆN ÍCH
+
     // =====================================================================
 
     private void expect(FtpResponse r, int code) throws FtpException {
@@ -484,7 +445,6 @@ public class FtpClientController {
         writer = null;
     }
 
-    /** Lỗi do Server trả về mã phản hồi không mong đợi (4xx/5xx...). */
     public static class FtpException extends IOException {
         private final FtpResponse response;
 

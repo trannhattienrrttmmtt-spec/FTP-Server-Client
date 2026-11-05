@@ -4,13 +4,6 @@ import java.net.InetSocketAddress;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Lớp đại diện và phân tích thông điệp phản hồi Passive Mode (PASV) từ Server
- * Chuẩn định dạng RFC 959: 227 Entering Passive Mode (h1,h2,h3,h4,p1,p2)
- *
- * Đề tài: Hệ thống FTP Server/Client cơ bản với Hai kênh
- * Phụ trách: Phan Thanh Trọng (MSSV: 2380602351)
- */
 public class PassiveModeInfo {
     private static final Pattern PASV_PATTERN = Pattern.compile(
             "\\(?(\\d{1,3})\\s*,\\s*(\\d{1,3})\\s*,\\s*(\\d{1,3})\\s*,\\s*(\\d{1,3})\\s*,\\s*(\\d{1,3})\\s*,\\s*(\\d{1,3})\\)?"
@@ -26,15 +19,6 @@ public class PassiveModeInfo {
         this.rawResponse = rawResponse;
     }
 
-    /**
-     * Phân tích chuỗi phản hồi từ lệnh PASV của Server
-     * Ví dụ: "227 Entering Passive Mode (127,0,0,1,195,104)."
-     * Tính toán: port = p1 * 256 + p2
-     *
-     * @param pasvResponse Chuỗi phản hồi từ Server
-     * @return Đối tượng PassiveModeInfo chứa host và port
-     * @throws IllegalArgumentException nếu chuỗi không hợp lệ hoặc port ngoài khoảng 1-65535
-     */
     public static PassiveModeInfo parse(String pasvResponse) throws IllegalArgumentException {
         if (pasvResponse == null || pasvResponse.trim().isEmpty()) {
             throw new IllegalArgumentException("Chuoi phan hoi PASV rong hoac null.");
@@ -52,7 +36,6 @@ public class PassiveModeInfo {
         int p1 = Integer.parseInt(matcher.group(5));
         int p2 = Integer.parseInt(matcher.group(6));
 
-        // Kiểm tra tính hợp lệ của dải số octet IPv4
         if (h1 > 255 || h2 > 255 || h3 > 255 || h4 > 255) {
             throw new IllegalArgumentException("Dia chi IP khong hop le trong phan hoi PASV: " + pasvResponse);
         }

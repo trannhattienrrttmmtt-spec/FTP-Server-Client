@@ -62,6 +62,16 @@ project/
 
 ## 🚀 HƯỚNG DẪN BIÊN DỊCH VÀ KHỞI CHẠY SERVER
 
+## Mở và chạy dự án bằng Apache NetBeans (Java thông thường / Ant)
+
+Dự án dùng cấu hình **Java with Ant**, không cần Maven. Trong NetBeans chọn **File → Open Project...** và mở thư mục có `build.xml` cùng `nbproject/project.xml`.
+
+- Nhấn **Run Project (F6)** để chạy `server.FtpServer` với cổng `2121` và thư mục `server/ftp_root`.
+- Để chạy giao diện quản trị, mở **Project Properties → Run**, đổi **Main Class** thành `server.ServerApp`, rồi chạy project. Có thể đổi lại `server.FtpServer` để chạy CLI.
+- Project sử dụng JDK 11 trở lên; JDK 17 tương thích.
+
+
+
 ### 1. Yêu cầu môi trường
 - **Hệ điều hành**: Windows 10/11 (hoặc Linux/macOS).
 - **Java**: Java Development Kit (JDK) 11 trở lên (Khuyến nghị **JDK 17**).

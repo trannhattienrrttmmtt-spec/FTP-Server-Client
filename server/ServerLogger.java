@@ -8,11 +8,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.function.Consumer;
 
-/**
- * Lớp ghi log hoạt động của Server ra Console, tệp server.log và Giao diện UI
- * Đề tài: Hệ thống FTP Server/Client cơ bản với Hai kênh
- * Thực hiện: Trần Nhật Tiến (MSSV: 2380602243)
- */
 public class ServerLogger {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final Object LOCK = new Object();

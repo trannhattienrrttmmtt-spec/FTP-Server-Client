@@ -6,11 +6,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 
-/**
- * Quản lý kênh dữ liệu Passive Mode (Data Channel) cho từng phiên làm việc của Client
- * Đề tài: Hệ thống FTP Server/Client cơ bản với Hai kênh
- * Thực hiện: Trần Nhật Tiến (MSSV: 2380602243)
- */
 public class PassiveDataConnection implements Closeable {
     private ServerSocket serverSocket;
     private Socket dataSocket;
@@ -23,14 +18,10 @@ public class PassiveDataConnection implements Closeable {
         openPassiveServerSocket();
     }
 
-    /**
-     * Mở ServerSocket trên một cổng khả dụng trong khoảng cấu hình hoặc cổng ngẫu nhiên của OS
-     */
     private void openPassiveServerSocket() throws IOException {
         int minPort = ServerConfig.PASSIVE_PORT_MIN;
         int maxPort = ServerConfig.PASSIVE_PORT_MAX;
 
-        // Thử mở trong dải port cấu hình
         for (int port = minPort; port <= maxPort; port++) {
             try {
                 serverSocket = new ServerSocket(port, 1, serverAddress);
@@ -38,29 +29,23 @@ public class PassiveDataConnection implements Closeable {
                 ServerLogger.info(clientTag, "Da mo Passive ServerSocket tai cong: " + port);
                 return;
             } catch (IOException ignored) {
-                // Thử cổng tiếp theo
+
             }
         }
 
-        // Nếu tất cả cổng trong dải bận, để hệ điều hành tự chọn cổng tự do
         serverSocket = new ServerSocket(0, 1, serverAddress);
         serverSocket.setSoTimeout(ServerConfig.DATA_TIMEOUT_MS);
         ServerLogger.info(clientTag, "Da mo Passive ServerSocket tai cong ngau nhien: " + serverSocket.getLocalPort());
     }
 
-    /**
-     * Tạo chuỗi phản hồi 227 Entering Passive Mode (h1,h2,h3,h4,p1,p2)
-     */
     public String getPassiveResponseString() {
         if (serverSocket == null) {
             return "425 Khong the mo kenh du lieu.";
         }
 
-        // Lấy địa chỉ IP
         InetAddress address = serverAddress;
         byte[] ip = address.getAddress();
 
-        // Nếu là wildcard 0.0.0.0 hoặc loopback, lấy 127.0.0.1 cho an toàn khi test local
         int h1, h2, h3, h4;
         if (address.isAnyLocalAddress()) {
             h1 = 127; h2 = 0; h3 = 0; h4 = 1;
@@ -79,9 +64,6 @@ public class PassiveDataConnection implements Closeable {
                 FtpResponseCode.ENTERING_PASSIVE_MODE, h1, h2, h3, h4, p1, p2);
     }
 
-    /**
-     * Chấp nhận kết nối Data Socket từ Client
-     */
     public Socket acceptConnection() throws IOException {
         if (serverSocket == null || serverSocket.isClosed()) {
             throw new IOException("Data ServerSocket chua duoc khoi tao hoac da dong.");
@@ -90,7 +72,7 @@ public class PassiveDataConnection implements Closeable {
         try {
             dataSocket = serverSocket.accept();
             dataSocket.setSoTimeout(ServerConfig.DATA_TIMEOUT_MS);
-            ServerLogger.info(clientTag, "Client da ket noi Data Channel thanh cong tu " 
+            ServerLogger.info(clientTag, "Client da ket noi Data Channel thanh cong tu "
                     + dataSocket.getRemoteSocketAddress());
             return dataSocket;
         } catch (SocketTimeoutException e) {
@@ -99,9 +81,6 @@ public class PassiveDataConnection implements Closeable {
         }
     }
 
-    /**
-     * Gửi chuỗi danh sách tệp tin qua Data Socket (phục vụ lệnh LIST / NLST)
-     */
     public void sendTextData(String textData) throws IOException {
         try (Socket socket = acceptConnection();
              BufferedWriter writer = new BufferedWriter(
@@ -114,9 +93,6 @@ public class PassiveDataConnection implements Closeable {
         }
     }
 
-    /**
-     * Gửi nội dung tệp tin đến Client qua Data Socket (phục vụ lệnh RETR / Download)
-     */
     public long sendFile(File file) throws IOException {
         if (!file.canRead()) {
             throw new IOException("Khong co quyen doc tep tin: " + file.getName());
@@ -133,7 +109,7 @@ public class PassiveDataConnection implements Closeable {
                 totalBytes += bytesRead;
             }
             socketOut.flush();
-            ServerLogger.info(clientTag, String.format("Da truyen thanh cong tep '%s' (%d bytes).", 
+            ServerLogger.info(clientTag, String.format("Da truyen thanh cong tep '%s' (%d bytes).",
                     file.getName(), totalBytes));
             return totalBytes;
         } finally {
@@ -141,10 +117,6 @@ public class PassiveDataConnection implements Closeable {
         }
     }
 
-    /**
-     * Nhận nội dung tệp tin từ Client qua Data Socket và ghi vào ổ đĩa (phục vụ lệnh STOR / Upload)
-     * Sử dụng file tạm .part để chống hỏng dữ liệu nếu mất kết nối giữa chừng
-     */
     public long receiveFile(File targetFile) throws IOException {
         long totalBytes = 0;
         File tempFile = new File(targetFile.getParentFile(), targetFile.getName() + ".part");
@@ -161,7 +133,6 @@ public class PassiveDataConnection implements Closeable {
             fileOut.flush();
             fileOut.close();
 
-            // Đổi tên file tạm thành file đích sau khi truyền trọn vẹn thành công
             if (targetFile.exists()) {
                 targetFile.delete();
             }
@@ -169,11 +140,11 @@ public class PassiveDataConnection implements Closeable {
                 throw new IOException("Khong the doi ten file tam sang file dich: " + targetFile.getName());
             }
 
-            ServerLogger.info(clientTag, String.format("Da nhan thanh cong tep '%s' (%d bytes) tu Client.", 
+            ServerLogger.info(clientTag, String.format("Da nhan thanh cong tep '%s' (%d bytes) tu Client.",
                     targetFile.getName(), totalBytes));
             return totalBytes;
         } catch (IOException e) {
-            // Dọn dẹp file tạm khi gặp lỗi gián đoạn hoặc mất kết nối
+
             if (tempFile.exists()) {
                 tempFile.delete();
             }

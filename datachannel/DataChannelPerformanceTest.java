@@ -7,21 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Ứng dụng kiểm thử và đánh giá hiệu năng toàn diện trên Data Channel
- * Đề tài: Hệ thống FTP Server/Client cơ bản với Hai kênh
- * Phụ trách: Phan Thanh Trọng (MSSV: 2380602351)
- *
- * Kịch bản kiểm thử bao gồm:
- * 1. Khởi tạo và đàm phán Passive Mode (PASV)
- * 2. Truyền file nhỏ (10 KB) - STOR và RETR + Kiểm tra SHA-256 Integrity
- * 3. Truyền file trung bình (2 MB) - STOR và RETR + Đo Throughput (MB/s)
- * 4. Truyền file lớn (20 MB) - STOR và RETR + Đo Throughput & Kiểm tra Buffer
- * 5. Kiểm thử các tình huống lỗi mạng và bảo mật:
- *    - 5a: Tải file không tồn tại (550 File unavailable)
- *    - 5b: Vi phạm Sandbox Root / Path Traversal (550 Permission denied)
- *    - 5c: Mất kết nối giữa chừng (Simulated Broken Pipe / 426 Transfer aborted)
- */
 public class DataChannelPerformanceTest {
     private static final String SERVER_HOST = "127.0.0.1";
     private static final int CONTROL_PORT = 2121;
@@ -53,24 +38,19 @@ public class DataChannelPerformanceTest {
         }
 
         try {
-            // 1. Kết nối Control Channel và Đăng nhập
+
             connectAndLogin();
 
-            // 2. Test Truyền File Nhỏ (10 KB)
             testFileTransfer("file_nho_10KB.bin", 10 * 1024, DataChannelHelper.DEFAULT_BUFFER_SIZE);
 
-            // 3. Test Truyền File Trung Bình (2 MB)
             testFileTransfer("file_vua_2MB.bin", 2 * 1024 * 1024, DataChannelHelper.DEFAULT_BUFFER_SIZE);
 
-            // 4. Test Truyền File Lớn (20 MB) với Buffer 64KB
             testFileTransfer("file_lon_20MB.bin", 20 * 1024 * 1024, DataChannelHelper.LARGE_BUFFER_SIZE);
 
-            // 5. Kiểm thử các ca lỗi thực tế
             testErrorFileNotFound();
             testErrorPathTraversal();
             testErrorBrokenConnectionMidway();
 
-            // 6. In bảng tổng kết hiệu năng
             printSummaryReport();
 
         } finally {
@@ -88,7 +68,7 @@ public class DataChannelPerformanceTest {
     }
 
     // =========================================================================
-    // KẾT NỐI VÀ ĐIỀU KHIỂN CƠ BẢN
+
     // =========================================================================
 
     private void connectAndLogin() throws Exception {
@@ -145,7 +125,7 @@ public class DataChannelPerformanceTest {
     }
 
     // =========================================================================
-    // KIỂM THỬ TRUYỀN FILE (STOR & RETR) + SHA-256 CHECK
+
     // =========================================================================
 
     private void testFileTransfer(String fileName, long sizeBytes, int bufferSize) throws Exception {
@@ -154,7 +134,6 @@ public class DataChannelPerformanceTest {
                 fileName, formatSize(sizeBytes), bufferSize / 1024);
         System.out.println("--------------------------------------------------------------------------------");
 
-        // 1. Tạo file dữ liệu mẫu
         File uploadFile = new File(tempDir, "client_up_" + fileName);
         System.out.println("1. Tao file mau de upload...");
         DataChannelHelper.createDummyFile(uploadFile, sizeBytes);
@@ -199,7 +178,6 @@ public class DataChannelPerformanceTest {
         System.out.println("<< " + downloadDoneResp);
         testResults.add(downloadStats);
 
-        // 4. So sánh Checksum SHA-256
         String downloadedHash = DataChannelHelper.calculateFileSHA256(downloadedFile);
         System.out.println("\n4. Kiem tra toan ven du lieu (Integrity Check):");
         System.out.println("   Original SHA-256:   " + originalHash);
@@ -212,12 +190,11 @@ public class DataChannelPerformanceTest {
             throw new AssertionError("Checksum khong khop giua ban goc va ban tai ve!");
         }
 
-        // Xóa file trên Server để dọn dẹp
         sendCommand("DELE " + fileName);
     }
 
     // =========================================================================
-    // KIỂM THỬ XỬ LÝ LỖI (ERROR HANDLING)
+
     // =========================================================================
 
     private void testErrorFileNotFound() throws Exception {
@@ -225,7 +202,7 @@ public class DataChannelPerformanceTest {
         System.out.println(">>> [TEST LỖI 1] RETR Tệp Không Tồn Tại (File Not Found)");
         System.out.println("--------------------------------------------------------------------------------");
         PassiveModeInfo pasv = requestPassiveMode();
-        // Không kết nối data socket vội vì server sẽ trả lỗi ngay trên control
+
         String resp = sendCommand("RETR file_hoan_toan_khong_co_that.abc");
         if (resp.startsWith("550")) {
             System.out.println(" [OK - PASS] Server bat loi chinh xac: 550 File unavailable.");
@@ -265,7 +242,6 @@ public class DataChannelPerformanceTest {
             return;
         }
 
-        // Gửi 32 KB rồi ngắt kết nối đột ngột (Abort / Socket Reset)
         OutputStream out = dataSocket.getOutputStream();
         byte[] chunk = new byte[8192];
         for (int i = 0; i < 4; i++) {
@@ -274,11 +250,10 @@ public class DataChannelPerformanceTest {
         out.flush();
 
         System.out.println(" [CLIENT] Da gui 32 KB / 1024 KB. Bay gio DONG NGANG DATA SOCKET (Dot ngot mat ket noi)...");
-        // Giả lập crash / mất kết nối bằng cách đóng socket ngay lập tức
+
         dataSocket.setSoLinger(true, 0); // RST packet
         dataSocket.close();
 
-        // Đọc phản hồi từ Server
         String finishResp = readResponse();
         System.out.println("<< [SERVER] " + finishResp);
 
@@ -290,7 +265,7 @@ public class DataChannelPerformanceTest {
     }
 
     // =========================================================================
-    // BÁO CÁO KẾT QUẢ VÀ HIỂN THỊ
+
     // =========================================================================
 
     private void printSummaryReport() {
@@ -352,7 +327,7 @@ public class DataChannelPerformanceTest {
     }
 
     // =========================================================================
-    // LỚP LẮNG NGHE TIẾN ĐỘ TRUYỀN DỮ LIỆU
+
     // =========================================================================
 
     private static class ConsoleTransferListener implements DataTransferListener {
@@ -385,7 +360,7 @@ public class DataChannelPerformanceTest {
 
         @Override
         public void onTransferComplete(long totalBytes, long elapsedTimeMs, double averageSpeedKBps) {
-            System.out.println(); // Xuống dòng
+            System.out.println();
             System.out.printf(Locale.ENGLISH, "   [%s] HOAN TAT! Tong: %d bytes | Thoi gian: %d ms | Toc do TB: %.2f KB/s (%.2f MB/s)\n",
                     label, totalBytes, elapsedTimeMs, averageSpeedKBps, averageSpeedKBps / 1024.0);
         }

@@ -2,14 +2,9 @@ package datachannel;
 
 import java.util.Locale;
 
-/**
- * Lưu trữ và định dạng các thông số thống kê hiệu năng truyền tải dữ liệu
- * Đề tài: Hệ thống FTP Server/Client cơ bản với Hai kênh
- * Phụ trách: Phan Thanh Trọng (MSSV: 2380602351)
- */
 public class DataTransferStats {
     private final String fileName;
-    private final String direction; // "UPLOAD" (STOR) hoặc "DOWNLOAD" (RETR)
+    private final String direction;
     private long totalBytes;
     private long elapsedTimeMs;
     private double speedKBps;
@@ -31,7 +26,6 @@ public class DataTransferStats {
         this.sha256Checksum = sha256Checksum;
         this.success = true;
 
-        // Tính toán tốc độ truyền
         // bytes / (ms / 1000) = bytes/s -> / 1024 = KB/s -> / 1024 = MB/s
         double seconds = this.elapsedTimeMs / 1000.0;
         double bytesPerSec = this.totalBytes / seconds;
@@ -80,9 +74,6 @@ public class DataTransferStats {
         return errorMessage;
     }
 
-    /**
-     * Định dạng kích thước dữ liệu theo dạng người đọc dễ hiểu (B, KB, MB)
-     */
     public String getFormattedSize() {
         if (totalBytes < 1024) {
             return totalBytes + " B";
@@ -93,9 +84,6 @@ public class DataTransferStats {
         }
     }
 
-    /**
-     * Xuất tóm tắt kết quả kiểm thử dạng chuỗi rõ ràng
-     */
     public String getFormattedReport() {
         if (!success) {
             return String.format(Locale.ENGLISH,

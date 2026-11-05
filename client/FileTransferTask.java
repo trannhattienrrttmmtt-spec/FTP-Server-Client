@@ -8,18 +8,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Tác vụ truyền tệp chạy nền bằng {@link SwingWorker} để giao diện không bị đơ.
- * Hỗ trợ truyền nhiều tệp liên tiếp (tải lên / tải xuống hàng loạt), báo tiến độ từng tệp
- * qua {@link DataTransferListener} (module datachannel) và cho phép hủy giữa chừng.
- *
- * Phụ trách: Nguyễn Anh Vũ (MSSV: 2380602582)
- */
 public class FileTransferTask extends SwingWorker<Integer, FileTransferTask.Progress> {
 
     public enum Direction { UPLOAD, DOWNLOAD }
 
-    /** Một cặp tệp cục bộ <-> tệp trên Server cần truyền. */
     public static class Job {
         final File localFile;
         final String remoteName;
@@ -30,13 +22,12 @@ public class FileTransferTask extends SwingWorker<Integer, FileTransferTask.Prog
         }
     }
 
-    /** Ảnh chụp tiến độ hiện tại, được đẩy về luồng giao diện (EDT). */
     public static class Progress {
         public final String fileName;
-        public final int fileIndex;     // bắt đầu từ 1
+        public final int fileIndex;
         public final int fileCount;
         public final long bytesDone;
-        public final long bytesTotal;   // -1 nếu không rõ
+        public final long bytesTotal;
         public final int percent;
         public final double bytesPerSecond;
 
@@ -52,7 +43,6 @@ public class FileTransferTask extends SwingWorker<Integer, FileTransferTask.Prog
         }
     }
 
-    /** Nhận sự kiện trên luồng giao diện. */
     public interface Callback {
         void onProgress(Direction direction, Progress progress);
 
@@ -73,7 +63,6 @@ public class FileTransferTask extends SwingWorker<Integer, FileTransferTask.Prog
         this.callback = callback;
     }
 
-    /** Yêu cầu hủy: đánh dấu worker và đóng Data Socket đang mở. */
     public void requestCancel() {
         cancel(false);
         controller.abortTransfer();
@@ -101,7 +90,7 @@ public class FileTransferTask extends SwingWorker<Integer, FileTransferTask.Prog
                 @Override
                 public void onTransferProgress(long bytesTransferred, long totalBytes, int percent) {
                     long now = System.nanoTime();
-                    // Giới hạn ~20 lần cập nhật/giây để không làm nghẽn EDT
+
                     if (now - lastPublishNanos < 50_000_000L && bytesTransferred < totalBytes) return;
                     lastPublishNanos = now;
                     publish(new Progress(displayName, index, jobs.size(), bytesTransferred, totalBytes,
@@ -116,7 +105,7 @@ public class FileTransferTask extends SwingWorker<Integer, FileTransferTask.Prog
 
                 @Override
                 public void onTransferError(Exception ex) {
-                    // Lỗi được xử lý ở khối catch bên dưới
+
                 }
 
                 private double speed(long bytes, long now) {
@@ -135,7 +124,7 @@ public class FileTransferTask extends SwingWorker<Integer, FileTransferTask.Prog
                 succeededCount = succeeded;
             } catch (IOException e) {
                 errors.add(displayName + ": " + e.getMessage());
-                if (!controller.isConnected()) break; // mất kết nối -> dừng cả hàng đợi
+                if (!controller.isConnected()) break;
             }
         }
         return succeeded;

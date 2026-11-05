@@ -8,11 +8,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-/**
- * Luồng xử lý từng Client kết nối vào Control Channel của FTP Server
- * Đề tài: Hệ thống FTP Server/Client cơ bản với Hai kênh
- * Thực hiện: Trần Nhật Tiến (MSSV: 2380602243)
- */
 public class ClientHandler implements Runnable {
     private final Socket controlSocket;
     private final File rootDir;
@@ -23,13 +18,11 @@ public class ClientHandler implements Runnable {
     private BufferedReader reader;
     private BufferedWriter writer;
 
-    // Trạng thái phiên làm việc của Client
     private boolean isLoggedIn = false;
     private String userCandidate = null;
     private String currentUsername = null;
     private File currentDir;
 
-    // Kênh dữ liệu (Data Channel) theo cơ chế Passive Mode
     private PassiveDataConnection passiveConnection;
     private volatile boolean isRunning = true;
 
@@ -50,7 +43,6 @@ public class ClientHandler implements Runnable {
             reader = new BufferedReader(new InputStreamReader(controlSocket.getInputStream(), ServerConfig.CHARSET_NAME));
             writer = new BufferedWriter(new OutputStreamWriter(controlSocket.getOutputStream(), ServerConfig.CHARSET_NAME));
 
-            // Gui banner chao mung 220
             sendResponse(FtpResponseCode.SERVICE_READY, "Chao mung den voi FTP Server Hai Kenh (Nhom 11 - HUTECH).");
 
             String line;
@@ -73,9 +65,6 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    /**
-     * Xu ly phan tich cu phap lenh tu Client
-     */
     private void handleCommand(String fullCommand) throws IOException {
         String command;
         String argument = "";
@@ -159,7 +148,7 @@ public class ClientHandler implements Runnable {
     }
 
     // ==========================================
-    // CAC PHUONG THUC XU LY CHI TIET TUNG LENH
+
     // ==========================================
 
     private void handleUser(String username) {
@@ -235,22 +224,17 @@ public class ClientHandler implements Runnable {
             currentDir = parent;
             sendResponse(FtpResponseCode.FILE_ACTION_OK, "Da len thu muc cha: " + getVirtualPath(currentDir));
         } else {
-            // Dang o root roi thi giu nguyen tai root
             currentDir = rootDir;
             sendResponse(FtpResponseCode.FILE_ACTION_OK, "Dang o thu muc goc (Root): /");
         }
     }
 
-    /**
-     * Xu ly lenh PASV - Mo kenh du lieu Passive Mode
-     */
     private void handlePasv() {
         if (!checkLogin()) return;
         try {
-            // Dong ket noi passive cu neu con mo
+
             closePassiveConnection();
 
-            // Tao ket noi Passive moi
             passiveConnection = new PassiveDataConnection(controlSocket.getLocalAddress(), clientTag);
             String responseStr = passiveConnection.getPassiveResponseString();
             sendRawResponse(responseStr);
@@ -260,9 +244,6 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    /**
-     * Xu ly lenh LIST / NLST - Gui danh sach tep tin qua Data Channel
-     */
     private void handleList(boolean namesOnly, String argument) {
         if (!checkLogin()) return;
         if (passiveConnection == null || !passiveConnection.isOpen()) {
@@ -278,7 +259,7 @@ public class ClientHandler implements Runnable {
             }
         }
 
-        sendResponse(FtpResponseCode.FILE_STATUS_OK_OPENING_DATA_CONNECTION, 
+        sendResponse(FtpResponseCode.FILE_STATUS_OK_OPENING_DATA_CONNECTION,
                 "Mo ket noi Data Channel de truyen danh sach tep tin.");
 
         try {
@@ -294,7 +275,7 @@ public class ClientHandler implements Runnable {
                         String perms = file.isDirectory() ? "drwxr-xr-x" : "-rw-r--r--";
                         long size = file.length();
                         String dateStr = sdf.format(new Date(file.lastModified()));
-                        sb.append(String.format(Locale.ENGLISH, "%s 1 ftp ftp %10d %s %s\r\n", 
+                        sb.append(String.format(Locale.ENGLISH, "%s 1 ftp ftp %10d %s %s\r\n",
                                 perms, size, dateStr, file.getName()));
                     }
                 }
@@ -310,9 +291,6 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    /**
-     * Xu ly lenh RETR (Download) - Gui file tu Server den Client
-     */
     private void handleRetr(String fileName) {
         if (!checkLogin()) return;
         if (fileName.isEmpty()) {
@@ -336,12 +314,12 @@ public class ClientHandler implements Runnable {
             return;
         }
 
-        sendResponse(FtpResponseCode.FILE_STATUS_OK_OPENING_DATA_CONNECTION, 
+        sendResponse(FtpResponseCode.FILE_STATUS_OK_OPENING_DATA_CONNECTION,
                 String.format("Mo Data Channel che do BINARY cho tep '%s' (%d bytes).", file.getName(), file.length()));
 
         try {
             long transferred = passiveConnection.sendFile(file);
-            sendResponse(FtpResponseCode.CLOSING_DATA_CONNECTION, 
+            sendResponse(FtpResponseCode.CLOSING_DATA_CONNECTION,
                     String.format("Truyen tep thanh cong (%d bytes).", transferred));
         } catch (IOException e) {
             ServerLogger.error(clientTag, "Loi khi truyen file: " + e.getMessage(), e);
@@ -351,9 +329,6 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    /**
-     * Xu ly lenh STOR (Upload) - Nhan file tu Client luu len Server
-     */
     private void handleStor(String fileName) {
         if (!checkLogin()) return;
         if (fileName.isEmpty()) {
@@ -385,12 +360,12 @@ public class ClientHandler implements Runnable {
             return;
         }
 
-        sendResponse(FtpResponseCode.FILE_STATUS_OK_OPENING_DATA_CONNECTION, 
+        sendResponse(FtpResponseCode.FILE_STATUS_OK_OPENING_DATA_CONNECTION,
                 "San sang nhan du lieu cho tep: " + file.getName());
 
         try {
             long received = passiveConnection.receiveFile(file);
-            sendResponse(FtpResponseCode.CLOSING_DATA_CONNECTION, 
+            sendResponse(FtpResponseCode.CLOSING_DATA_CONNECTION,
                     String.format("Upload tep '%s' thanh cong (%d bytes).", file.getName(), received));
         } catch (IOException e) {
             ServerLogger.error(clientTag, "Loi khi nhan file upload: " + e.getMessage(), e);
@@ -400,9 +375,6 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    /**
-     * Xu ly lenh DELE - Xoa file
-     */
     private void handleDele(String fileName) {
         if (!checkLogin()) return;
         File file = resolvePath(fileName);
@@ -417,9 +389,6 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    /**
-     * Xu ly lenh MKD - Tao thu muc moi
-     */
     private void handleMkd(String dirName) {
         if (!checkLogin()) return;
         File dir = resolvePath(dirName);
@@ -434,9 +403,6 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    /**
-     * Xu ly lenh RMD - Xoa thu muc rong
-     */
     private void handleRmd(String dirName) {
         if (!checkLogin()) return;
         File dir = resolvePath(dirName);
@@ -455,9 +421,6 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    /**
-     * Xu ly lenh SIZE - Tra ve dung luong file
-     */
     private void handleSize(String fileName) {
         if (!checkLogin()) return;
         File file = resolvePath(fileName);
@@ -504,12 +467,9 @@ public class ClientHandler implements Runnable {
     }
 
     // ==========================================
-    // CAC TIEN ICH KIEM TRA DUONG DAN VA MANG
+
     // ==========================================
 
-    /**
-     * Chuyen doi duong dan tuong doi/tuyet doi thanh File, chong Path Traversal
-     */
     private File resolvePath(String relativeOrAbsolutePath) {
         if (relativeOrAbsolutePath == null || relativeOrAbsolutePath.isEmpty()) {
             return currentDir;
@@ -532,9 +492,6 @@ public class ClientHandler implements Runnable {
         return null;
     }
 
-    /**
-     * Kiem tra duong dan co nam an toan trong sandbox rootDir hay khong
-     */
     private boolean isSafePath(File file) {
         try {
             String canonicalRoot = rootDir.getCanonicalPath();
@@ -545,9 +502,6 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    /**
-     * Lay duong dan ao (Virtual Path) tuong doi voi rootDir de hien thi cho Client
-     */
     private String getVirtualPath(File file) {
         try {
             String canonicalRoot = rootDir.getCanonicalPath();
@@ -563,16 +517,10 @@ public class ClientHandler implements Runnable {
         return "/";
     }
 
-    /**
-     * Gui phan hoi chuan voi ma trang thai va thong diep
-     */
     private void sendResponse(int code, String message) {
         sendRawResponse(code + " " + message);
     }
 
-    /**
-     * Gui chuoi phan hoi truc tiep qua Control Socket
-     */
     private void sendRawResponse(String raw) {
         try {
             if (writer != null) {

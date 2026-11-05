@@ -4,16 +4,8 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Một dòng trong kết quả lệnh LIST (định dạng kiểu UNIX "ls -l") do Server trả về:
- * <pre>
- * drwxr-xr-x 1 ftp ftp          0 Oct 15 02:05 tailieu
- * -rw-r--r-- 1 ftp ftp        599 Oct 15 02:05 welcome.txt
- * </pre>
- * Phụ trách: Nguyễn Anh Vũ (MSSV: 2380602582)
- */
 public class FtpFileEntry {
-    // perms  links  owner  group  size  month day time/year  name (có thể chứa khoảng trắng)
+
     private static final Pattern UNIX_LIST = Pattern.compile(
             "^([\\-dlrwxsStT]{10})\\s+\\d+\\s+\\S+\\s+\\S+\\s+(\\d+)\\s+(\\S+\\s+\\d{1,2}\\s+[\\d:]+)\\s(.+)$");
 
@@ -31,10 +23,6 @@ public class FtpFileEntry {
         this.permissions = permissions;
     }
 
-    /**
-     * Phân tích một dòng LIST. Nếu không khớp định dạng UNIX, coi cả dòng là tên tệp (vd. kết quả NLST).
-     * @return null nếu dòng rỗng
-     */
     public static FtpFileEntry parse(String line) {
         if (line == null) return null;
         line = line.replace("\r", "").replace("\n", "");
@@ -56,7 +44,6 @@ public class FtpFileEntry {
         return new FtpFileEntry(line.trim(), false, -1, "", "");
     }
 
-    /** Định dạng dung lượng dễ đọc: 1.5 KB, 2.3 MB ... */
     public static String formatSize(long bytes) {
         if (bytes < 0) return "?";
         if (bytes < 1024) return bytes + " B";

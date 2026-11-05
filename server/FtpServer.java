@@ -12,12 +12,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Lớp khởi chạy chính của FTP Server (Multi-threaded TCP Two-Channel)
- * Đề tài: Hệ thống FTP Server/Client cơ bản với Hai kênh (Điều khiển và Dữ liệu)
- * Môn học: Lập trình mạng máy tính - Lớp: 23DTHB4 - Nhóm 11
- * Sinh viên thực hiện phần Server: Trần Nhật Tiến (MSSV: 2380602243)
- */
 public class FtpServer {
     private final int port;
     private final File rootDir;
@@ -66,9 +60,6 @@ public class FtpServer {
         return startTime;
     }
 
-    /**
-     * Bắt đầu lắng nghe kết nối từ Client
-     */
     public void start() {
         printBanner();
         try {
@@ -79,30 +70,26 @@ public class FtpServer {
             ServerLogger.info("Thu muc luu tru goc (Root): " + rootDir.getAbsolutePath());
             ServerLogger.info("San sang tiep nhan cac ket noi Client...\n");
 
-            // Đăng ký Shutdown Hook giải phóng tài nguyên khi tắt ứng dụng
             Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
 
-            // Khởi chạy luồng đọc lệnh console của quản trị viên (nếu chạy ở chế độ CLI)
             if (enableConsoleInput) {
                 Thread consoleThread = new Thread(this::runAdminConsole, "Admin-Console-Thread");
                 consoleThread.setDaemon(true);
                 consoleThread.start();
             }
 
-            // Vòng lặp chính tiếp nhận kết nối đa luồng
             while (isRunning) {
                 try {
                     Socket clientSocket = serverSocket.accept();
                     int clientId = clientCounter.incrementAndGet();
-                    ServerLogger.info(String.format("Tiep nhan Client moi #%d tu dia chi: %s", 
+                    ServerLogger.info(String.format("Tiep nhan Client moi #%d tu dia chi: %s",
                             clientId, clientSocket.getRemoteSocketAddress()));
 
-                    // Chuyển giao xử lý cho luồng riêng biệt trong ThreadPool
                     ClientHandler handler = new ClientHandler(clientSocket, rootDir, userManager, clientId);
                     threadPool.execute(handler);
                 } catch (IOException e) {
                     if (!isRunning) {
-                        break; // ServerSocket đã chủ động đóng
+                        break;
                     }
                     ServerLogger.error("Loi khi chap nhan ket noi Client: " + e.getMessage());
                 }
@@ -114,9 +101,6 @@ public class FtpServer {
         }
     }
 
-    /**
-     * Dừng Server và dọn dẹp các tài nguyên mạng
-     */
     public synchronized void stop() {
         if (!isRunning && (serverSocket == null || serverSocket.isClosed())) {
             return;
@@ -133,9 +117,6 @@ public class FtpServer {
         ServerLogger.info("FTP Server da dung hoan toan.");
     }
 
-    /**
-     * Giao diện dòng lệnh dành cho Quản trị viên điều khiển Server trực tiếp
-     */
     private void runAdminConsole() {
         Scanner scanner = new Scanner(System.in);
         while (isRunning) {
@@ -177,7 +158,7 @@ public class FtpServer {
                     }
                 }
             } catch (Exception e) {
-                // Tránh crash console thread
+
                 break;
             }
         }

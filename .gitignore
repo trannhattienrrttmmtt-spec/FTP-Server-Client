@@ -1,5 +1,7 @@
 # Compiled class files
 bin/
+/target/
+/build/
 *.class
 
 # Log files
@@ -18,3 +20,4 @@ server.log
 Thumbs.db
 Desktop.ini
 .DS_Store
+/nbproject/private/

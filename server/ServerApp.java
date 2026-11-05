@@ -24,14 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-/**
- * Giao diện đồ họa Quản trị FTP Server (Java Swing GUI)
- * Đề tài: Hệ thống FTP Server/Client cơ bản với Hai kênh (Điều khiển và Dữ liệu)
- * Môn học: Lập trình mạng máy tính - Lớp: 23DTHB4 - Nhóm 11
- * Sinh viên thực hiện phần Server: Trần Nhật Tiến (MSSV: 2380602243)
- *
- * Đã khắc phục triệt để lỗi màu mất chữ, lỗi ô vuông [] trên Windows Look and Feel.
- */
 public class ServerApp extends JFrame {
 
     private final UserManager userManager = new UserManager();
@@ -39,7 +31,6 @@ public class ServerApp extends JFrame {
     private Thread serverThread;
     private LocalDateTime serverStartTime;
 
-    // Màu sắc giao diện phẳng
     private static final Color CLR_START = new Color(22, 163, 74);      // Green 600
     private static final Color CLR_STOP = new Color(220, 38, 38);       // Red 600
     private static final Color CLR_PRIMARY = new Color(37, 99, 235);     // Blue 600
@@ -48,7 +39,6 @@ public class ServerApp extends JFrame {
     private static final Icon FOLDER_ICON = new FolderVectorIcon(16, 16);
     private static final Icon FILE_ICON = new FileVectorIcon(16, 16);
 
-    // --- Điều khiển cấu hình ---
     private final JTextField portField = new JTextField(String.valueOf(ServerConfig.DEFAULT_CONTROL_PORT), 6);
     private final JTextField rootField = new JTextField("server/ftp_root", 22);
     private final JButton browseBtn = new JButton("Chọn...");
@@ -56,7 +46,6 @@ public class ServerApp extends JFrame {
     private final ServerCustomButton startBtn = new ServerCustomButton("Khởi động Server", CLR_START, Color.WHITE);
     private final ServerCustomButton stopBtn = new ServerCustomButton("Dừng Server", CLR_STOP, Color.WHITE);
 
-    // --- Thanh trạng thái Dashboard ---
     private final StatusBadgeLabel statusBadge = new StatusBadgeLabel();
     private final JLabel lanIpLabel = new JLabel("IP LAN: 127.0.0.1");
     private final JLabel pasvRangeLabel = new JLabel(
@@ -64,7 +53,6 @@ public class ServerApp extends JFrame {
     private final JLabel clientCountLabel = new JLabel("Lượt kết nối: 0");
     private final JLabel uptimeLabel = new JLabel("Uptime: 00:00:00");
 
-    // --- Bảng quản lý tài khoản ---
     private final UserTableModel userTableModel = new UserTableModel();
     private final JTable userTable = new JTable(userTableModel);
     private final JTextField newUsernameField = new JTextField(9);
@@ -72,13 +60,11 @@ public class ServerApp extends JFrame {
     private final JButton addUserBtn = new JButton("+ Thêm / Sửa");
     private final JButton removeUserBtn = new JButton("- Xóa");
 
-    // --- Bảng giám sát tệp tin trong Sandbox Root ---
     private final RootFileTableModel rootFileTableModel = new RootFileTableModel();
     private final JTable rootFileTable = new JTable(rootFileTableModel);
     private final JButton refreshFilesBtn = new JButton("Làm mới kho tệp");
     private final JLabel rootSummaryLabel = new JLabel("0 mục");
 
-    // --- Khung Nhật ký (Server Console Log) ---
     private final JTextArea logArea = new JTextArea();
     private final JCheckBox autoScrollCheck = new JCheckBox("Tự động cuộn", true);
     private final JButton clearLogBtn = new JButton("Xóa Log");
@@ -101,19 +87,15 @@ public class ServerApp extends JFrame {
         buildUi();
         wireEvents();
 
-        // Đăng ký nhận log thời gian thực từ ServerLogger
         ServerLogger.setUiLogListener(this::appendLogAsync);
 
-        // Cập nhật bảng tài khoản và tệp tin ban đầu
         userTableModel.refresh(userManager.getAllUsers());
         refreshRootFiles();
         lanIpLabel.setText("IP LAN: " + detectLanIp());
 
-        // Timer cập nhật Uptime & Số kết nối mỗi giây
         dashboardTimer = new Timer(1000, e -> updateDashboardMetrics());
         dashboardTimer.start();
 
-        // Tự động khởi chạy Server ngay khi mở giao diện để tiện demo
         SwingUtilities.invokeLater(this::startServer);
     }
 
@@ -122,10 +104,8 @@ public class ServerApp extends JFrame {
         root.setBorder(new EmptyBorder(10, 10, 10, 10));
         setContentPane(root);
 
-        // ==================== TOP: CẤU HÌNH & DASHBOARD ====================
         JPanel topContainer = new JPanel(new BorderLayout(0, 6));
 
-        // Dòng 1: Cấu hình cổng, thư mục gốc và nút Bật/Tắt
         JPanel configBar = new JPanel(new GridBagLayout());
         configBar.setBorder(new TitledBorder("Cấu hình & Điều khiển Máy chủ FTP (Control Channel & Passive Data Pool)"));
         GridBagConstraints c = new GridBagConstraints();
@@ -162,7 +142,6 @@ public class ServerApp extends JFrame {
         c.gridx = col;
         configBar.add(stopBtn, c);
 
-        // Dòng 2: Thanh chỉ số trạng thái (Dashboard Pills)
         JPanel statsBar = new JPanel(new GridLayout(1, 5, 10, 0));
         statsBar.setBorder(new EmptyBorder(2, 2, 2, 2));
 
@@ -180,7 +159,6 @@ public class ServerApp extends JFrame {
         // ==================== CENTER: SPLIT PANE ====================
         JPanel leftPanel = new JPanel(new GridLayout(2, 1, 0, 8));
 
-        // 1. Panel Quản lý Tài khoản
         JPanel userPanel = new JPanel(new BorderLayout(4, 6));
         userPanel.setBorder(new TitledBorder("Quản lý Tài khoản Xác thực (UserManager)"));
 
@@ -198,7 +176,6 @@ public class ServerApp extends JFrame {
         userForm.add(removeUserBtn);
         userPanel.add(userForm, BorderLayout.SOUTH);
 
-        // 2. Panel Giám sát Tệp trong Sandbox Root
         JPanel filePanel = new JPanel(new BorderLayout(4, 6));
         filePanel.setBorder(new TitledBorder("Giám sát Kho Lưu trữ Gốc (Sandbox Root Directory)"));
 
@@ -218,7 +195,6 @@ public class ServerApp extends JFrame {
         leftPanel.add(userPanel);
         leftPanel.add(filePanel);
 
-        // Bên phải: Nhật ký Server Console Log thời gian thực
         JPanel logPanel = new JPanel(new BorderLayout(4, 6));
         logPanel.setBorder(new TitledBorder("Nhật ký Hoạt động Thời gian thực (Control Channel & Data Channel Logs)"));
 
@@ -530,7 +506,7 @@ public class ServerApp extends JFrame {
     }
 
     // =====================================================================
-    // CUSTOM BUTTON TỰ VẼ - ĐẢM BẢO CHỮ LUÔN NỔI BẬT KHÔNG BỊ TRẮNG MẤT CHỮ
+
     // =====================================================================
 
     private static class ServerCustomButton extends JButton {
@@ -587,7 +563,7 @@ public class ServerApp extends JFrame {
     }
 
     // =====================================================================
-    // ĐÈN LED TRẠNG THÁI TỰ VẼ - KHÔNG BỊ LỖI FONT
+
     // =====================================================================
 
     private static class StatusBadgeLabel extends JPanel {
@@ -628,7 +604,7 @@ public class ServerApp extends JFrame {
     }
 
     // =====================================================================
-    // VECTOR ICONS (KHÔNG DÙNG EMOJI)
+
     // =====================================================================
 
     private static class FolderVectorIcon implements Icon {

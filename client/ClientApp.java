@@ -27,33 +27,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
-/**
- * Giao diện đồ họa Java Swing NÂNG CẤP TOÀN DIỆN cho FTP Client Hai Kênh.
- *
- * ĐẶC ĐIỂM THIẾT KẾ:
- * 1. Khắc phục triệt để lỗi mất chữ, chữ biến mất hoặc lỗi ô vuông []:
- *    - Tuyệt đối không dùng Unicode Emoji surrogate pairs làm lỗi font Windows Swing.
- *    - Toàn bộ Icon thư mục và tệp tin được vẽ trực tiếp bằng Vector Graphics2D sắc nét.
- *    - Các nút có màu tùy chỉnh (Kết nối, Ngắt kết nối, Tải lên, Tải xuống, Hủy) được
- *      tự vẽ qua ModernButton, đảm bảo chữ luôn nổi bật, tương phản cao, căn giữa hoàn hảo.
- * 2. Bố cục 2 Bảng Dual-Pane Explorer (Máy Cục Bộ <--> Máy Chủ Server):
- *    - Local Explorer: Xem và duyệt tệp cục bộ, lọc nhanh theo tên.
- *    - Remote Explorer: Xem và duyệt tệp máy chủ, lọc nhanh theo tên.
- *    - Nhấp đúp vào tệp Local: Tự động Upload sang Server.
- *    - Nhấp đúp vào tệp Server: Tự động Download về thư mục Local hiện tại.
- *    - Nút truyền trung tâm: [ Tải lên >> ] và [ << Tải xuống ].
- * 3. Quick Connect Bar với đèn LED trạng thái tự co giãn, không bị che khuất địa chỉ IP.
- * 4. Terminal Console Dark Theme với cú pháp màu tương phản cao, dễ nhìn.
- *
- * Phụ trách phát triển: Nguyễn Anh Vũ (MSSV: 2380602582) - Nhóm 11 (HUTECH)
- */
 public class ClientApp extends JFrame {
 
     private static final int KEEP_ALIVE_MS = 60_000;
     private static final SimpleDateFormat TIME_FMT = new SimpleDateFormat("HH:mm:ss");
     private static final SimpleDateFormat DATE_FMT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
-    // Bảng màu giao diện phẳng (Flat UI Colors)
     private static final Color CLR_BG_MAIN = new Color(245, 247, 250);
     private static final Color CLR_CARD_BG = Color.WHITE;
     private static final Color CLR_BORDER = new Color(220, 226, 235);
@@ -66,7 +45,6 @@ public class ClientApp extends JFrame {
     private static final Color CLR_SELECTION = new Color(219, 234, 254);
     private static final Color CLR_CONSOLE_BG = new Color(26, 27, 30);       // Dark Slate
 
-    // Icon Vector vẽ bằng Graphics2D (hoàn toàn không bị lỗi font hay ô vuông)
     private static final Icon FOLDER_ICON = new FolderVectorIcon(16, 16);
     private static final Icon FILE_ICON = new FileVectorIcon(16, 16);
 
@@ -77,7 +55,6 @@ public class ClientApp extends JFrame {
         return t;
     });
 
-    // --- Khung Đăng Nhập Nhanh (Quick Connect) ---
     private final JTextField hostField = createStyledTextField("127.0.0.1", 10);
     private final JTextField portField = createStyledTextField(String.valueOf(FtpClientController.DEFAULT_PORT), 4);
     private final JTextField userField = createStyledTextField("vu", 8);
@@ -89,7 +66,6 @@ public class ClientApp extends JFrame {
     });
     private final ConnectionStatusBadge statusBadge = new ConnectionStatusBadge();
 
-    // --- Thanh Công Cụ Chính (Top Toolbar) ---
     private final ModernButton toolbarRefreshBtn = new ModernButton("Làm mới tất cả", null, new Color(30, 41, 59));
     private final ModernButton toolbarUploadBtn = new ModernButton("Tải lên (-> Server)", new Color(241, 245, 249), new Color(15, 23, 42));
     private final ModernButton toolbarDownloadBtn = new ModernButton("Tải xuống (<- Local)", new Color(241, 245, 249), new Color(15, 23, 42));
@@ -97,7 +73,6 @@ public class ClientApp extends JFrame {
     private final ModernButton toolbarDeleteBtn = new ModernButton("Xóa", null, new Color(185, 28, 28));
     private final ModernButton toolbarToggleLogBtn = new ModernButton("Nhật ký (Bật/Tắt)", null, new Color(71, 85, 105));
 
-    // --- Bảng Cục Bộ (Local Explorer - Left Pane) ---
     private File currentLocalDir = new File(System.getProperty("user.home"));
     private final JTextField localPathField = createStyledTextField(currentLocalDir.getAbsolutePath(), 15);
     private final JTextField localSearchField = createStyledTextField("", 10);
@@ -108,11 +83,9 @@ public class ClientApp extends JFrame {
     private final JTable localTable = new JTable(localTableModel);
     private final JLabel localSummaryLabel = new JLabel("0 mục");
 
-    // --- Nút Chuyển Giao Trung Tâm (Center Action Buttons) ---
     private final ModernButton centerUploadBtn = new ModernButton("Tải lên >>", CLR_PRIMARY, Color.WHITE);
     private final ModernButton centerDownloadBtn = new ModernButton("<< Tải xuống", new Color(13, 148, 136), Color.WHITE);
 
-    // --- Bảng Máy Chủ (Remote Server Explorer - Right Pane) ---
     private String currentRemotePath = "/";
     private final JTextField remotePathField = createStyledTextField("/", 15);
     private final JTextField remoteSearchField = createStyledTextField("", 10);
@@ -123,7 +96,6 @@ public class ClientApp extends JFrame {
     private final JTable remoteTable = new JTable(remoteTableModel);
     private final JLabel remoteSummaryLabel = new JLabel("Chưa kết nối");
 
-    // --- Khung Log Terminal (Dark Console) ---
     private final JTextPane consolePane = new JTextPane();
     private final JTextField consoleCmdField = createStyledTextField("", 25);
     private final ModernButton consoleSendBtn = new ModernButton("Gửi lệnh", new Color(51, 65, 85), Color.WHITE);
@@ -134,7 +106,6 @@ public class ClientApp extends JFrame {
     private boolean consoleVisible = true;
     private int lastConsoleDividerLocation = 480;
 
-    // --- Thanh Tiến Trình & Trạng Thái Đáy (Bottom Status Bar) ---
     private final JProgressBar progressBar = new JProgressBar(0, 100);
     private final JLabel statusTextLabel = new JLabel("Sẵn sàng.");
     private final JLabel transferDetailLabel = new JLabel("");
@@ -152,7 +123,6 @@ public class ClientApp extends JFrame {
         loadLocalDirectory(currentLocalDir);
         updateUiState();
 
-        // Định kỳ gửi NOOP giữ phiên kết nối
         new javax.swing.Timer(KEEP_ALIVE_MS, e -> {
             if (controller.isLoggedIn() && currentTransfer == null) {
                 background.submit(controller::keepAliveIfIdle);
@@ -186,7 +156,7 @@ public class ClientApp extends JFrame {
     }
 
     // =====================================================================
-    // XÂY DỰNG BỐ CỤC GIAO DIỆN (UI LAYOUT)
+
     // =====================================================================
 
     private void buildUi() {
@@ -194,20 +164,16 @@ public class ClientApp extends JFrame {
         root.setBackground(CLR_BG_MAIN);
         setContentPane(root);
 
-        // 1. VÙNG PHÍA BẮC (Header: Quick Connect + Main Toolbar)
         JPanel northPanel = new JPanel(new BorderLayout(0, 0));
         northPanel.setBackground(CLR_BG_MAIN);
         northPanel.add(buildQuickConnectBar(), BorderLayout.NORTH);
         northPanel.add(buildMainToolBar(), BorderLayout.SOUTH);
         root.add(northPanel, BorderLayout.NORTH);
 
-        // 2. VÙNG TRUNG TÂM (Dual Pane Explorer: Local vs Remote)
         JPanel dualPaneContainer = buildDualExplorerPanel();
 
-        // 3. KHUNG TERMINAL LOG (Dark Console)
         JPanel consolePanel = buildConsolePanel();
 
-        // Split ngang: Trên là Dual Pane, dưới là Console Log
         mainVerticalSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, dualPaneContainer, consolePanel);
         mainVerticalSplit.setResizeWeight(0.72);
         mainVerticalSplit.setDividerSize(6);
@@ -215,11 +181,9 @@ public class ClientApp extends JFrame {
         mainVerticalSplit.setBorder(null);
         root.add(mainVerticalSplit, BorderLayout.CENTER);
 
-        // 4. VÙNG PHÍA NAM (Status Bar & Progress Panel)
         root.add(buildBottomStatusBar(), BorderLayout.SOUTH);
     }
 
-    /** Thanh đăng nhập nhanh (Quick Connect Bar) */
     private JPanel buildQuickConnectBar() {
         JPanel bar = new JPanel(new BorderLayout(8, 0));
         bar.setBackground(CLR_CARD_BG);
@@ -267,7 +231,6 @@ public class ClientApp extends JFrame {
         return bar;
     }
 
-    /** Thanh công cụ chính (Main Toolbar) */
     private JPanel buildMainToolBar() {
         JPanel bar = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
         bar.setBackground(new Color(241, 245, 249));
@@ -293,16 +256,13 @@ public class ClientApp extends JFrame {
         return bar;
     }
 
-    /** Bố cục 2 Bảng: Máy Cục Bộ (Trái) <--> Máy Chủ (Phải) */
     private JPanel buildDualExplorerPanel() {
         JPanel container = new JPanel(new BorderLayout(0, 0));
         container.setBackground(CLR_BG_MAIN);
         container.setBorder(new EmptyBorder(6, 8, 4, 8));
 
-        // Panel Cục Bộ (Local)
         JPanel leftPanel = buildLocalExplorerPanel();
 
-        // Panel Nút Trung Tâm (Transfer Action Buttons)
         JPanel centerTransferPanel = new JPanel(new GridBagLayout());
         centerTransferPanel.setOpaque(false);
         centerTransferPanel.setBorder(new EmptyBorder(0, 4, 0, 4));
@@ -318,10 +278,8 @@ public class ClientApp extends JFrame {
         centerTransferPanel.add(centerUploadBtn, gbc);
         centerTransferPanel.add(centerDownloadBtn, gbc);
 
-        // Panel Máy Chủ (Remote)
         JPanel rightPanel = buildRemoteExplorerPanel();
 
-        // Ghép SplitPane 2 bên
         JSplitPane horizontalSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, rightPanel);
         horizontalSplit.setResizeWeight(0.5);
         horizontalSplit.setDividerSize(8);
@@ -332,7 +290,6 @@ public class ClientApp extends JFrame {
         return container;
     }
 
-    /** Trình duyệt tệp tin Cục bộ (Local Explorer) */
     private JPanel buildLocalExplorerPanel() {
         JPanel panel = new JPanel(new BorderLayout(0, 4));
         panel.setBackground(CLR_CARD_BG);
@@ -341,7 +298,6 @@ public class ClientApp extends JFrame {
                 new EmptyBorder(6, 8, 6, 8)
         ));
 
-        // Tiêu đề & Điều hướng Local
         JPanel headerPanel = new JPanel(new BorderLayout(4, 4));
         headerPanel.setOpaque(false);
 
@@ -376,7 +332,6 @@ public class ClientApp extends JFrame {
 
         panel.add(headerPanel, BorderLayout.NORTH);
 
-        // Bảng tệp Local
         setupTableAppearance(localTable);
         localTable.setModel(localTableModel);
         localTable.getColumnModel().getColumn(0).setPreferredWidth(230);
@@ -392,7 +347,6 @@ public class ClientApp extends JFrame {
         scroll.getViewport().setBackground(Color.WHITE);
         panel.add(scroll, BorderLayout.CENTER);
 
-        // Tóm tắt Local
         localSummaryLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         localSummaryLabel.setForeground(new Color(100, 116, 139));
         panel.add(localSummaryLabel, BorderLayout.SOUTH);
@@ -400,7 +354,6 @@ public class ClientApp extends JFrame {
         return panel;
     }
 
-    /** Trình duyệt tệp tin Máy chủ (Remote Explorer) */
     private JPanel buildRemoteExplorerPanel() {
         JPanel panel = new JPanel(new BorderLayout(0, 4));
         panel.setBackground(CLR_CARD_BG);
@@ -409,7 +362,6 @@ public class ClientApp extends JFrame {
                 new EmptyBorder(6, 8, 6, 8)
         ));
 
-        // Tiêu đề & Điều hướng Remote
         JPanel headerPanel = new JPanel(new BorderLayout(4, 4));
         headerPanel.setOpaque(false);
 
@@ -444,7 +396,6 @@ public class ClientApp extends JFrame {
 
         panel.add(headerPanel, BorderLayout.NORTH);
 
-        // Bảng tệp Remote
         setupTableAppearance(remoteTable);
         remoteTable.setModel(remoteTableModel);
         remoteTable.getColumnModel().getColumn(0).setPreferredWidth(230);
@@ -462,7 +413,6 @@ public class ClientApp extends JFrame {
         scroll.getViewport().setBackground(Color.WHITE);
         panel.add(scroll, BorderLayout.CENTER);
 
-        // Tóm tắt Remote
         remoteSummaryLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         remoteSummaryLabel.setForeground(new Color(100, 116, 139));
         panel.add(remoteSummaryLabel, BorderLayout.SOUTH);
@@ -470,7 +420,6 @@ public class ClientApp extends JFrame {
         return panel;
     }
 
-    /** Khung Log Terminal (Dark Console Style) */
     private JPanel buildConsolePanel() {
         JPanel panel = new JPanel(new BorderLayout(0, 4));
         panel.setBackground(CLR_CARD_BG);
@@ -479,7 +428,6 @@ public class ClientApp extends JFrame {
                 new EmptyBorder(4, 8, 4, 8)
         ));
 
-        // Thanh tiêu đề Console
         JPanel bar = new JPanel(new BorderLayout());
         bar.setOpaque(false);
         JLabel title = new JLabel("NHẬT KÝ LỆNH CONTROL CHANNEL & TRẠNG THÁI GIAO THỨC");
@@ -494,7 +442,6 @@ public class ClientApp extends JFrame {
         bar.add(actions, BorderLayout.EAST);
         panel.add(bar, BorderLayout.NORTH);
 
-        // Vùng chữ Terminal
         consolePane.setEditable(false);
         consolePane.setBackground(CLR_CONSOLE_BG);
         consolePane.setFont(new Font("Consolas", Font.PLAIN, 12));
@@ -506,7 +453,6 @@ public class ClientApp extends JFrame {
         scroll.setPreferredSize(new Dimension(800, 130));
         panel.add(scroll, BorderLayout.CENTER);
 
-        // Ô gõ lệnh thủ công
         JPanel inputBar = new JPanel(new BorderLayout(4, 0));
         inputBar.setOpaque(false);
         JLabel prompt = new JLabel(" FTP> ");
@@ -522,7 +468,6 @@ public class ClientApp extends JFrame {
         return panel;
     }
 
-    /** Thanh Tiến trình & Trạng thái Đáy */
     private JPanel buildBottomStatusBar() {
         JPanel bar = new JPanel(new BorderLayout(8, 0));
         bar.setBackground(new Color(241, 245, 249));
@@ -531,11 +476,9 @@ public class ClientApp extends JFrame {
                 new EmptyBorder(4, 12, 4, 12)
         ));
 
-        // Nhãn trạng thái bên trái
         statusTextLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         bar.add(statusTextLabel, BorderLayout.WEST);
 
-        // Tiến trình bên phải
         JPanel progressPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         progressPanel.setOpaque(false);
 
@@ -557,11 +500,11 @@ public class ClientApp extends JFrame {
     }
 
     // =====================================================================
-    // CÁC HÀM XỬ LÝ SỰ KIỆN (EVENT WIRING)
+
     // =====================================================================
 
     private void wireEvents() {
-        // Đăng nhập / Ngắt kết nối
+
         connectBtn.addActionListener(e -> connect());
         passField.addActionListener(e -> connect());
         disconnectBtn.addActionListener(e -> disconnect());
@@ -659,7 +602,6 @@ public class ClientApp extends JFrame {
             }
         });
 
-        // Phím tắt bàn phím F5, Delete
         getRootPane().registerKeyboardAction(e -> {
             loadLocalDirectory(currentLocalDir);
             if (controller.isLoggedIn()) refreshRemoteListing();
@@ -674,7 +616,6 @@ public class ClientApp extends JFrame {
         });
     }
 
-    /** Cập nhật trạng thái enabled/disabled của các nút theo ngữ cảnh */
     private void updateUiState() {
         boolean connected = controller.isConnected();
         boolean loggedIn = controller.isLoggedIn();
@@ -750,7 +691,7 @@ public class ClientApp extends JFrame {
     }
 
     // =====================================================================
-    // QUẢN LÝ TỆP TIN CỤC BỘ (LOCAL FILE MANAGEMENT)
+
     // =====================================================================
 
     private void loadLocalDirectory(File dir) {
@@ -848,7 +789,7 @@ public class ClientApp extends JFrame {
     }
 
     // =====================================================================
-    // QUẢN LÝ MÁY CHỦ (REMOTE FILE MANAGEMENT)
+
     // =====================================================================
 
     private void connect() {
@@ -1068,7 +1009,7 @@ public class ClientApp extends JFrame {
     }
 
     // =====================================================================
-    // TRUYỀN TẢI TỆP TIN (UPLOAD / DOWNLOAD LOGIC)
+
     // =====================================================================
 
     private void uploadSelectedLocalFiles() {
@@ -1196,7 +1137,7 @@ public class ClientApp extends JFrame {
     }
 
     // =====================================================================
-    // GỬI LỆNH DÒNG LỆNH THỦ CÔNG (COMMAND CONSOLE)
+
     // =====================================================================
 
     private void sendManualCommand() {
@@ -1234,14 +1175,14 @@ public class ClientApp extends JFrame {
 
                 Style style = consolePane.addStyle("LogStyle", null);
                 if (line.startsWith(">>")) {
-                    StyleConstants.setForeground(style, new Color(56, 189, 248));   // Sky Blue lệnh gửi
+                    StyleConstants.setForeground(style, new Color(56, 189, 248));
                     StyleConstants.setBold(style, true);
                 } else if (line.startsWith("<<")) {
                     if (line.contains(" 5") || line.contains(" 4")) {
-                        StyleConstants.setForeground(style, new Color(248, 113, 113)); // Red lỗi
+                        StyleConstants.setForeground(style, new Color(248, 113, 113));
                         StyleConstants.setBold(style, true);
                     } else {
-                        StyleConstants.setForeground(style, new Color(74, 222, 128)); // Bright Green thành công
+                        StyleConstants.setForeground(style, new Color(74, 222, 128));
                     }
                 } else if (line.startsWith("***")) {
                     StyleConstants.setForeground(style, new Color(251, 191, 36));   // Yellow info
@@ -1314,11 +1255,6 @@ public class ClientApp extends JFrame {
     // UI COMPONENTS FACTORIES & CUSTOM BUTTON
     // =====================================================================
 
-    /**
-     * Nút bấm hiện đại tự vẽ:
-     * - Hoàn toàn không phụ thuộc Native Windows Button UI bị lỗi mất chữ / đen / trắng.
-     * - Chữ luôn căn giữa, tương phản rõ ràng, đổi màu khi hover / click / disabled.
-     */
     public static class ModernButton extends JButton {
         private final Color normalBg;
         private final Color normalFg;
@@ -1360,7 +1296,7 @@ public class ClientApp extends JFrame {
                     g2.fillRoundRect(0, 0, w, h, 6, 6);
                 }
             } else {
-                // Nút outline chuẩn
+
                 if (getModel().isRollover() && isEnabled()) {
                     g2.setColor(new Color(241, 245, 249));
                     g2.fillRoundRect(0, 0, w, h, 6, 6);
@@ -1372,7 +1308,6 @@ public class ClientApp extends JFrame {
                 g2.drawRoundRect(0, 0, w - 1, h - 1, 6, 6);
             }
 
-            // Vẽ chữ căn giữa hoàn hảo
             FontMetrics fm = g2.getFontMetrics(getFont());
             String text = getText();
             int tw = fm.stringWidth(text);
@@ -1446,10 +1381,9 @@ public class ClientApp extends JFrame {
     }
 
     // =====================================================================
-    // VECTOR ICONS (VẼ THƯ MỤC VÀ TỆP TIN BẰNG VECTOR GRAPHICS)
+
     // =====================================================================
 
-    /** Icon Thư mục màu vàng cam - không bao giờ bị ô vuông [] */
     private static class FolderVectorIcon implements Icon {
         private final int width;
         private final int height;
@@ -1467,22 +1401,18 @@ public class ClientApp extends JFrame {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-            // Nắp folder tab
             g2.setColor(new Color(217, 119, 6)); // Amber dark
             g2.fillRoundRect(x + 1, y + 2, 7, 5, 2, 2);
 
-            // Thân folder
             g2.setColor(new Color(245, 158, 11)); // Amber vibrant
             g2.fillRoundRect(x + 1, y + 4, width - 2, height - 5, 3, 3);
 
-            // Viền nhẹ
             g2.setColor(new Color(180, 83, 9));
             g2.drawRoundRect(x + 1, y + 4, width - 3, height - 6, 3, 3);
             g2.dispose();
         }
     }
 
-    /** Icon Tệp tin màu xanh xám - không bao giờ bị ô vuông [] */
     private static class FileVectorIcon implements Icon {
         private final int width;
         private final int height;
@@ -1505,15 +1435,12 @@ public class ClientApp extends JFrame {
             int pw = width - 4;
             int ph = height - 2;
 
-            // Thân giấy
             g2.setColor(Color.WHITE);
             g2.fillRoundRect(px, py, pw, ph, 2, 2);
 
-            // Viền tệp
             g2.setColor(new Color(148, 163, 184));
             g2.drawRoundRect(px, py, pw, ph, 2, 2);
 
-            // Các dòng chữ mô phỏng
             g2.setColor(new Color(203, 213, 225));
             g2.drawLine(px + 3, py + 4, px + pw - 3, py + 4);
             g2.drawLine(px + 3, py + 7, px + pw - 3, py + 7);
@@ -1686,7 +1613,6 @@ public class ClientApp extends JFrame {
         }
     }
 
-    /** Đèn LED trạng thái kết nối - tự động tính chiều rộng tránh mất chữ */
     private static class ConnectionStatusBadge extends JPanel {
         enum State { DISCONNECTED, CONNECTING, CONNECTED }
         private State state = State.DISCONNECTED;
@@ -1720,15 +1646,12 @@ public class ClientApp extends JFrame {
             Color dotColor = state == State.CONNECTED ? CLR_SUCCESS
                     : (state == State.CONNECTING ? CLR_WARNING : CLR_DANGER);
 
-            // Chấm LED
             g2.setColor(dotColor);
             g2.fillOval(4, 8, 10, 10);
 
-            // Viền mờ LED
             g2.setColor(new Color(dotColor.getRed(), dotColor.getGreen(), dotColor.getBlue(), 60));
             g2.drawOval(2, 6, 13, 13);
 
-            // Nhãn chữ
             g2.setFont(new Font("Segoe UI", Font.BOLD, 11));
             g2.setColor(new Color(51, 65, 85));
             g2.drawString(text, 22, 17);

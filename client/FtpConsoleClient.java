@@ -10,12 +10,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * FTP Client chế độ dòng lệnh (console) - dùng chung {@link FtpClientController} với bản GUI.
- * Thông báo in ra không dấu để hiển thị đúng trên mọi cửa sổ CMD.
- *
- * Phụ trách: Nguyễn Anh Vũ (MSSV: 2380602582)
- */
 public class FtpConsoleClient {
 
     private final FtpClientController ftp = new FtpClientController();
@@ -64,7 +58,6 @@ public class FtpConsoleClient {
         System.out.println("Tam biet!");
     }
 
-    /** @return false nếu người dùng muốn thoát chương trình */
     private boolean execute(BufferedReader in, String cmd, String arg) throws IOException {
         switch (cmd) {
             case "help":
@@ -223,7 +216,7 @@ public class FtpConsoleClient {
     }
 
     private static String[] splitTwo(String arg) {
-        // Hỗ trợ tên có khoảng trắng bằng dấu ngoặc kép: get "bao cao.docx" D:\bc.docx
+
         String first, rest;
         if (arg.startsWith("\"")) {
             int end = arg.indexOf('"', 1);
@@ -273,7 +266,6 @@ public class FtpConsoleClient {
         System.out.println("  * Ten co khoang trang: dat trong dau ngoac kep, vd: get \"bao cao.txt\"");
     }
 
-    /** Thanh tiến trình dạng văn bản: [##########----------]  50%  1.2 MB / 2.4 MB  800 KB/s */
     private static class ConsoleProgress implements DataTransferListener {
         private final String label;
         private long start;
